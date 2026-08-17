@@ -1,0 +1,165 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String          @id @default(cuid())
+  email         String          @unique
+  name          String
+  nickname      String?         // custom nickname, separate from Google name
+  image         String?         // fallback image from Google
+  avatarUrl     String?         // custom uploaded avatar (Vercel Blob), overrides image if exists
+  role          Role            @default(PLAYER)
+  status        UserStatus      @default(ACTIVE)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  roomPlayers   RoomPlayer[]
+  adminActions  AdminAuditLog[] @relation("ActorAdminActions")
+}
+
+enum Role {
+  PLAYER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+// NextAuth v5 standard models for Prisma Adapter
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Character {
+  id            String   @id // slug, e.g., "dawn", "wren"
+  name          String
+  archetype     String
+  abilityName   String
+  abilityDesc   String
+  role          String   // "Defense" | "Luck" | "Offense" | "Risk/Reward" | "Comeback" | "Evasion" | "Mobility"
+  spriteBaseUrl String   // spritesheet path
+  isEnabled     Boolean  @default(true)
+
+  roomPlayers   RoomPlayer[]
+}
+
+model Theme {
+  id           String    @id // slug, e.g., "wanderers-path"
+  name         String
+  description  String
+  boardArtUrl  String
+  isEnabled    Boolean   @default(true)
+  isDefault    Boolean   @default(false)
+
+  rooms        Room[]
+}
+
+model Room {
+  id               String      @id @default(cuid())
+  code             String      @unique // 6-character random alphanumeric code generated server-side
+  themeId          String
+  theme            Theme       @relation(fields: [themeId], references: [id])
+  hostUserId       String
+  status           RoomStatus  @default(LOBBY)
+  createdAt        DateTime    @default(now())
+  startedAt        DateTime?
+  endedAt          DateTime?
+  currentTurnIndex Int         @default(0)
+
+  players          RoomPlayer[]
+  moves            GameMove[]
+}
+
+enum RoomStatus {
+  LOBBY
+  IN_PROGRESS
+  FINISHED
+  ABANDONED
+}
+
+model RoomPlayer {
+  id              String    @id @default(cuid())
+  roomId          String
+  room            Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  characterId     String
+  character       Character @relation(fields: [characterId], references: [id])
+  cosmeticVariant String    @default("default") // palette-swap id
+  turnOrder       Int
+  position        Int       @default(0) // tile index 0-100 (where 100 is win)
+  isReady         Boolean   @default(false)
+  heldCards       Json      @default("[]") // JSON array of Action Card ids
+  usedAbility     Boolean   @default(false) // whether character ability has been used (if limited to 1x/match)
+  isWinner        Boolean   @default(false)
+  joinedAt        DateTime  @default(now())
+
+  @@unique([roomId, characterId]) // no duplicate characters in a room
+  @@unique([roomId, userId])      // user can join a room once
+}
+
+// Log of each turn - for anti-cheat audit & game history
+model GameMove {
+  id           String      @id @default(cuid())
+  roomId       String
+  room         Room        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomPlayerId String
+  diceResult   Int         // generated SERVER-SIDE, not client-side
+  fromTile     Int
+  toTile       Int
+  effectType   String?     // "hazard" | "boost" | "event" | "powerup" | "ability" | null
+  effectDetail Json?
+  createdAt    DateTime    @default(now())
+}
+
+model AdminAuditLog {
+  id          String   @id @default(cuid())
+  actorId     String
+  actor       User     @relation("ActorAdminActions", fields: [actorId], references: [id])
+  action      String   // "SUSPEND_USER" | "END_ROOM" | "TOGGLE_CHARACTER" | etc.
+  targetType  String
+  targetId    String
+  detail      Json?
+  createdAt   DateTime @default(now())
+}
