@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* JANGAN pakai nama --spacing-{xs,sm,md,lg,xl} atau nama lain yang
+   collide dengan namespace utility Tailwind reserved (spacing/container/
+   radius) — lihat AGENTS.md */
 @theme {
   --color-primary: #1B1A1F;
   --color-secondary: #4B4A57;
@@ -18,12 +21,6 @@
   --radius-md: 8px;
   --radius-lg: 16px;
   --radius-full: 9999px;
-
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
 }
 
 body {
