@@ -11,6 +11,7 @@ model User {
   id            String          @id @default(cuid())
   email         String          @unique
   name          String
+  emailVerified DateTime?       // required for NextAuth v5 prisma adapter
   nickname      String?         // custom nickname, separate from Google name
   image         String?         // fallback image from Google
   avatarUrl     String?         // custom uploaded avatar (Vercel Blob), overrides image if exists
