@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { pusherClient } from "@/lib/pusher-client";
 import { rollDice } from "../../_actions/gameplay";
-import BoardRenderer from "./BoardRenderer";
+import ThreeGameRenderer from "./ThreeGameRenderer";
 import { useRouter } from "next/navigation";
 import { Shield, Sparkles, Skull, Dices, ChevronRight, Zap, ArrowUp } from "lucide-react";
 
@@ -13,7 +13,7 @@ interface PlayerData {
   cosmeticVariant: string;
   position: number;
   isReady: boolean;
-  heldCards: any; // changed to any to align with Prisma Json type
+  heldCards: any; // JSON array of string ids
   usedAbility: boolean;
   isWinner: boolean;
   user: {
@@ -157,9 +157,13 @@ export default function GameplayClient({
         </div>
       )}
 
-      {/* Main Board view (8 columns) */}
-      <div className="lg:col-span-8 flex flex-col items-center justify-center bg-[#232129]/30 border border-[#4B4A57]/20 rounded-lg p-6">
-        <BoardRenderer players={players} />
+      {/* 3D Board View (8 columns) */}
+      <div className="lg:col-span-8 flex flex-col items-center justify-center w-full">
+        <ThreeGameRenderer 
+          players={players} 
+          currentTurnUserId={activeTurnPlayer?.userId}
+          activeDiceValue={rolledValue}
+        />
       </div>
 
       {/* Controller & Players turns sidebar (4 columns) */}
