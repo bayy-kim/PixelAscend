@@ -11,6 +11,9 @@ const pressStart = Press_Start_2P({
 export const metadata: Metadata = {
   title: "PixelAscend",
   description: "Ular tangga multiplayer bertema fantasi chibi pixel art.",
+  icons: {
+    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="15" fill="%23E8A33D"/><text x="50" y="68" font-size="55" font-family="monospace" font-weight="bold" fill="%231B1A1F" text-anchor="middle">P</text></svg>',
+  },
 };
 
 export default function RootLayout({
