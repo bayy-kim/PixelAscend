@@ -98,7 +98,7 @@ export default async function SelectThemePage() {
         <div className="flex flex-col gap-2 text-center">
           <span className="font-press-start text-[10px] text-[#E8A33D] tracking-widest uppercase">Langkah 1</span>
           <h1 className="text-3xl font-bold font-sans">Pilih Tema Papan</h1>
-          <p className="text-sm text-[#F2E9D8]/50 font-mono">MVP: Pilih Wanderer's Path untuk memulai permainan</p>
+          <p className="text-sm text-[#F2E9D8]/50 font-mono">MVP: Pilih Wanderer&apos;s Path untuk memulai permainan</p>
         </div>
 
         <Suspense

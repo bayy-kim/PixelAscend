@@ -50,7 +50,7 @@ export default async function PlayRoomPage({ searchParams }: PageProps) {
         <div className="flex flex-col gap-2 text-center">
           <span className="font-press-start text-[10px] text-[#5FA35A] tracking-widest uppercase">Langkah 2</span>
           <h1 className="text-3xl font-bold font-sans">Buat atau Gabung Room</h1>
-          <p className="text-sm text-[#F2E9D8]/50 font-mono">Tentukan pintu masukmu ke Wanderer's Path</p>
+          <p className="text-sm text-[#F2E9D8]/50 font-mono">Tentukan pintu masukmu ke Wanderer&apos;s Path</p>
         </div>
 
         <Suspense
