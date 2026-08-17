@@ -42,7 +42,7 @@ export async function rollDice(roomCode: string) {
       characterId: p.characterId,
       position: p.position,
       isReady: p.isReady,
-      heldCards: JSON.parse(p.heldCards as string) as string[],
+      heldCards: Array.isArray(p.heldCards) ? (p.heldCards as string[]) : [],
       usedAbility: p.usedAbility,
       isWinner: p.isWinner,
       turnOrder: p.turnOrder,
@@ -57,9 +57,7 @@ export async function rollDice(roomCode: string) {
       where: { id: activePlayer.id },
       data: {
         position: resolution.finalPosition,
-        heldCards: JSON.stringify(
-          mappedPlayers.find((p: any) => p.userId === activePlayer.userId)?.heldCards
-        ),
+        heldCards: mappedPlayers.find((p: any) => p.userId === activePlayer.userId)?.heldCards || [],
         usedAbility: mappedPlayers.find((p: any) => p.userId === activePlayer.userId)
           ?.usedAbility,
         isWinner: resolution.winnerUserId === activePlayer.userId,

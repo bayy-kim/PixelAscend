@@ -52,6 +52,7 @@ export async function joinLobby(roomCode: string) {
         turnOrder: room.players.length,
         position: 0,
         isReady: false,
+        heldCards: [],
       },
     });
 

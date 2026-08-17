@@ -46,6 +46,21 @@ export default async function GameplayPage({ params }: PageProps) {
     redirect(`/room/${roomCode}`);
   }
 
+  // Map database players to strict PlayerData interface
+  const mappedPlayers = room.players.map((p: any) => ({
+    id: p.id,
+    userId: p.userId,
+    characterId: p.characterId,
+    cosmeticVariant: p.cosmeticVariant,
+    position: p.position,
+    isReady: p.isReady,
+    heldCards: Array.isArray(p.heldCards) ? (p.heldCards as string[]) : [],
+    usedAbility: p.usedAbility,
+    isWinner: p.isWinner,
+    turnOrder: p.turnOrder,
+    user: p.user,
+  }));
+
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-[#1B1A1F] text-[#F2E9D8]">
       {/* Header bar */}
@@ -71,7 +86,7 @@ export default async function GameplayPage({ params }: PageProps) {
         <GameplayClient
           roomCode={roomCode}
           currentUserId={session.user.id}
-          initialPlayers={room.players}
+          initialPlayers={mappedPlayers}
           currentTurnIndex={room.currentTurnIndex}
           status={room.status}
         />

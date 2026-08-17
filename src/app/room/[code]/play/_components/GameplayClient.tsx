@@ -13,9 +13,10 @@ interface PlayerData {
   cosmeticVariant: string;
   position: number;
   isReady: boolean;
-  heldCards: any; // JSON array of string ids
+  heldCards: string[]; // array of action card IDs
   usedAbility: boolean;
   isWinner: boolean;
+  turnOrder: number;
   user: {
     name: string;
     nickname: string | null;
@@ -57,7 +58,7 @@ export default function GameplayClient({
   } | null>(null);
 
   // Determine active turn player
-  const sortedPlayers = [...players].sort((a, b) => a.userId.localeCompare(b.userId)); // matching server sorting index
+  const sortedPlayers = [...players].sort((a, b) => a.turnOrder - b.turnOrder);
   const activeTurnPlayer = sortedPlayers[turnIndex];
   const isMyTurn = activeTurnPlayer?.userId === currentUserId;
 
