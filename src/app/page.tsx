@@ -19,13 +19,15 @@ export default async function LandingPage() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col justify-center max-w-7xl mx-auto px-6 py-12 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full">
+        {/* Replaced Grid with Flexbox for absolute layout stability on all viewports */}
+        <div className="flex flex-col lg:flex-row gap-12 items-center justify-between w-full">
+          
           {/* Left Column: Hype Text */}
-          <div className="lg:col-span-7 flex flex-col gap-6 text-center lg:text-left items-center lg:items-start w-full">
+          <div className="w-full lg:w-[58%] flex flex-col gap-6 text-center lg:text-left items-center lg:items-start">
             <div className="inline-block px-3 py-1 bg-[#7C4DA8]/20 border border-[#7C4DA8]/40 rounded-full text-xs text-[#E8A33D] font-mono uppercase tracking-widest">
               Lobby Multiplayer MVP
             </div>
-            <h1 className="font-press-start text-3xl md:text-4xl lg:text-5xl leading-snug tracking-wide text-[#F2E9D8]">
+            <h1 className="font-press-start text-3xl md:text-4xl lg:text-5xl leading-snug tracking-wide text-[#F2E9D8] w-full">
               Daki Puncak <br />
               <span className="text-[#E8A33D] drop-shadow-[0_2px_0_#4B4A57]">Summit 100</span>!
             </h1>
@@ -55,7 +57,7 @@ export default async function LandingPage() {
           </div>
 
           {/* Right Column: Visual Preview Card */}
-          <div className="lg:col-span-5 flex justify-center w-full">
+          <div className="w-full lg:w-[38%] flex justify-center">
             <div className="w-full max-w-sm bg-[#232129] border-2 border-[#4B4A57]/40 rounded-lg p-6 flex flex-col gap-6 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-[#E8A33D]/5 rounded-full blur-2xl"></div>
               
