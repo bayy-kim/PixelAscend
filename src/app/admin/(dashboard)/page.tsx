@@ -1,4 +1,4 @@
-import { requireAdmin } from "./_lib/require-admin";
+import { requireAdmin } from "@/app/admin/_lib/require-admin";
 import { db } from "@/lib/db";
 import { Users, DoorOpen, Trophy } from "lucide-react";
 

@@ -1,6 +1,6 @@
-import { requireAdmin } from "../_lib/require-admin";
+import { requireAdmin } from "@/app/admin/_lib/require-admin";
 import { db } from "@/lib/db";
-import { toggleCharacterStatus, toggleThemeStatus } from "../_actions/moderation";
+import { toggleCharacterStatus, toggleThemeStatus } from "@/app/admin/_actions/moderation";
 
 export default async function AdminCatalogPage() {
   await requireAdmin();

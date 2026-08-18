@@ -6,6 +6,7 @@ import { selectCharacterAndPalette, toggleReady, startGame, leaveLobby } from ".
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { User, Check, Play, LogOut } from "lucide-react";
+import { CharacterIcon } from "@/app/_components/CharacterIcons";
 
 interface CharacterData {
   id: string;
@@ -176,11 +177,7 @@ export default function LobbyClient({
                 }`}
               >
                 {/* Character preview sprite representation */}
-                <div className={`w-14 h-14 rounded flex items-center justify-center text-xl font-bold font-press-start ${
-                  isSelected ? "bg-[#E8A33D] text-[#1B1A1F]" : "bg-[#232129] text-[#F2E9D8]/50"
-                }`}>
-                  {char.name[0]}
-                </div>
+                <CharacterIcon characterId={char.id} className="w-14 h-14" />
 
                 <div className="flex flex-col items-center text-center gap-1">
                   <span className="text-xs font-bold leading-tight font-sans text-[#F2E9D8] truncate max-w-[100px]">
@@ -206,9 +203,7 @@ export default function LobbyClient({
           <div className="bg-[#1B1A1F] rounded p-6 border border-[#4B4A57]/20 flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row items-center gap-6">
               {/* Selected representation */}
-              <div className="w-16 h-16 bg-[#E8A33D] rounded border-2 border-[#F2B75C] flex items-center justify-center font-press-start text-2xl text-[#1B1A1F] font-bold">
-                {activeCharData.name[0]}
-              </div>
+              <CharacterIcon characterId={activeCharData.id} className="w-16 h-16" />
 
               <div className="flex-1 flex flex-col gap-2">
                 <span className="text-sm font-press-start text-[#E8A33D]">

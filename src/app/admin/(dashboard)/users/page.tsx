@@ -1,6 +1,6 @@
-import { requireAdmin } from "../_lib/require-admin";
+import { requireAdmin } from "@/app/admin/_lib/require-admin";
 import { db } from "@/lib/db";
-import { toggleUserSuspension } from "../_actions/moderation";
+import { toggleUserSuspension } from "@/app/admin/_actions/moderation";
 import Image from "next/image";
 
 export default async function AdminUsersPage() {

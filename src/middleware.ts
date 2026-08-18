@@ -6,7 +6,7 @@ export default auth((req) => {
   const nextUrl = req.nextUrl;
 
   const isAuthRoute = nextUrl.pathname.startsWith("/api/auth");
-  const isPublicRoute = nextUrl.pathname === "/" || nextUrl.pathname.startsWith("/_next") || nextUrl.pathname.startsWith("/static");
+  const isPublicRoute = nextUrl.pathname === "/" || nextUrl.pathname === "/admin/login" || nextUrl.pathname.startsWith("/_next") || nextUrl.pathname.startsWith("/static");
 
   // Protect admin routes
   if (nextUrl.pathname.startsWith("/admin") && nextUrl.pathname !== "/admin/login") {

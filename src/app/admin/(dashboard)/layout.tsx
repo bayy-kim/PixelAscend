@@ -1,4 +1,4 @@
-import { requireAdmin } from "./_lib/require-admin";
+import { requireAdmin } from "@/app/admin/_lib/require-admin";
 import Link from "next/link";
 import { LayoutDashboard, Users, DoorOpen, Palette, ScrollText, ArrowLeft } from "lucide-react";
 

@@ -1,5 +1,6 @@
 import { auth, signIn } from "@/auth";
 import { redirect } from "next/navigation";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import Link from "next/link";
 import { ArrowLeft, Lock } from "lucide-react";
 
@@ -45,8 +46,7 @@ export default async function AdminLoginPage({ searchParams }: PageProps) {
                 redirectTo: "/admin",
               });
             } catch (err: any) {
-              // Handle next redirect trigger throw safely
-              if (err.message === "NEXT_REDIRECT") {
+              if (isRedirectError(err)) {
                 throw err;
               }
               redirect("/admin/login?error=InvalidCredentials");
