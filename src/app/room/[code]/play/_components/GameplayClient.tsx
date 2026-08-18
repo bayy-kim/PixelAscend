@@ -7,7 +7,7 @@ import { BoardRenderer2D, ActiveEmote } from "./BoardRenderer2D";
 import { BOARD_LAYOUT } from "@/lib/game/board";
 import { sounds, triggerHaptic } from "@/lib/audio-haptics";
 import { useRouter } from "next/navigation";
-import { Shield, Sparkles, Skull, Dices, ChevronRight, Zap, ArrowUp, Volume2, VolumeX, RotateCcw, Smile } from "lucide-react";
+import { Shield, Sparkles, Skull, Dices, ChevronRight, Zap, ArrowUp, Volume2, VolumeX, RotateCcw, Smile, Loader2 } from "lucide-react";
 
 interface PlayerData {
   userId: string;
@@ -418,8 +418,17 @@ export default function GameplayClient({
               }`}
               style={{ touchAction: "manipulation" }}
             >
-              <Dices className="w-4 h-4" />
-              {isPendingRoll ? "ROLLING..." : "KOCOK DADU"}
+              {isPendingRoll || isRolling ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-[#1B1A1F]" />
+                  <span>MENGOKOK...</span>
+                </>
+              ) : (
+                <>
+                  <Dices className="w-4 h-4" />
+                  <span>KOCOK DADU</span>
+                </>
+              )}
             </button>
           )}
 

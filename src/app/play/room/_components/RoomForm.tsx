@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { createRoom, joinRoomByCode } from "../_actions/room";
 import { useRouter } from "next/navigation";
+import { Loader2, Plus, LogIn } from "lucide-react";
 
 interface RoomFormProps {
   themeId: string | null;
@@ -62,9 +63,19 @@ export default function RoomForm({ themeId }: RoomFormProps) {
         <button
           onClick={handleCreate}
           disabled={isPendingCreate || !themeId}
-          className="w-full h-12 flex items-center justify-center bg-[#E8A33D] hover:bg-[#F2B75C] active:translate-y-[1px] text-[#1B1A1F] font-press-start text-xs rounded transition-all cursor-pointer shadow-md disabled:opacity-50"
+          className="w-full h-12 flex items-center justify-center gap-2 bg-[#E8A33D] hover:bg-[#F2B75C] active:translate-y-[1px] text-[#1B1A1F] font-press-start text-xs rounded transition-all cursor-pointer shadow-md disabled:opacity-50 min-h-[48px]"
         >
-          {isPendingCreate ? "MEMBUAT ROOM..." : "BUAT ROOM"}
+          {isPendingCreate ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin text-[#1B1A1F]" />
+              <span>MEMBUAT ROOM...</span>
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4" />
+              <span>BUAT ROOM</span>
+            </>
+          )}
         </button>
       </div>
 
@@ -89,9 +100,19 @@ export default function RoomForm({ themeId }: RoomFormProps) {
           <button
             type="submit"
             disabled={isPendingJoin}
-            className="bg-[#5FA35A] hover:bg-[#72b86d] active:translate-y-[1px] text-[#1B1A1F] font-press-start text-xs px-6 rounded transition-all cursor-pointer shadow-md disabled:opacity-50"
+            className="bg-[#5FA35A] hover:bg-[#72b86d] active:translate-y-[1px] text-[#1B1A1F] font-press-start text-xs px-6 rounded transition-all cursor-pointer shadow-md disabled:opacity-50 flex items-center gap-2 min-h-[48px]"
           >
-            {isPendingJoin ? "JOIN..." : "JOIN"}
+            {isPendingJoin ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-[#1B1A1F]" />
+                <span>JOIN...</span>
+              </>
+            ) : (
+              <>
+                <LogIn className="w-4 h-4" />
+                <span>JOIN</span>
+              </>
+            )}
           </button>
         </div>
       </form>
