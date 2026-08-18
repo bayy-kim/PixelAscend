@@ -70,6 +70,12 @@ export default function LobbyClient({
 
   useEffect(() => {
     const channelName = `presence-room-${roomCode}`;
+    
+    // Bind pusher error to prevent raw error popup
+    pusherClient.connection.bind("error", (err: any) => {
+      console.warn("Pusher connection warning:", err);
+    });
+
     const channel = pusherClient.subscribe(channelName);
 
     // Live update triggers

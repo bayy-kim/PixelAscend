@@ -98,6 +98,11 @@ export default function GameplayClient({
 
   useEffect(() => {
     const channelName = `presence-room-${roomCode}`;
+
+    pusherClient.connection.bind("error", (err: any) => {
+      console.warn("Pusher connection warning:", err);
+    });
+
     const channel = pusherClient.subscribe(channelName);
 
     // Real-time player emote handler

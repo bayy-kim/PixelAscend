@@ -66,6 +66,7 @@ export const authConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const isApiAuthRoute = nextUrl.pathname.startsWith("/api/auth");
+      const isPusherAuthRoute = nextUrl.pathname.startsWith("/api/pusher");
       const isPublicRoute =
         nextUrl.pathname === "/" ||
         nextUrl.pathname === "/admin/login" ||
@@ -83,7 +84,7 @@ export const authConfig = {
       }
 
       // Protect other dashboard / gameplay routes
-      if (!isPublicRoute && !isApiAuthRoute && !isLoggedIn) {
+      if (!isPublicRoute && !isApiAuthRoute && !isPusherAuthRoute && !isLoggedIn) {
         return false;
       }
 

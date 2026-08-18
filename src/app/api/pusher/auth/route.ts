@@ -3,19 +3,19 @@ import { pusherServer } from "@/lib/pusher-server";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return new NextResponse("Unauthorized", { status: 401 });
-  }
-
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const text = await req.text();
     const params = new URLSearchParams(text);
     const socketId = params.get("socket_id");
     const channelName = params.get("channel_name");
 
     if (!socketId || !channelName) {
-      return new NextResponse("Bad Request", { status: 400 });
+      return NextResponse.json({ error: "Bad Request" }, { status: 400 });
     }
 
     // Authenticate the presence channel using user session info
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(authResponse);
   } catch (err) {
-    console.error(err);
-    return new NextResponse("Internal Server Error", { status: 500 });
+    console.error("Pusher auth error:", err);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
