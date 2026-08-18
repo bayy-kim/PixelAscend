@@ -3,7 +3,8 @@
 import { useEffect, useState, useTransition } from "react";
 import { pusherClient } from "@/lib/pusher-client";
 import { rollDice } from "../../_actions/gameplay";
-import ThreeGameRenderer from "./ThreeGameRenderer";
+import { BoardRenderer2D } from "./BoardRenderer2D";
+import { BOARD_LAYOUT } from "@/lib/game/board";
 import { useRouter } from "next/navigation";
 import { Shield, Sparkles, Skull, Dices, ChevronRight, Zap, ArrowUp } from "lucide-react";
 
@@ -158,17 +159,72 @@ export default function GameplayClient({
         </div>
       )}
 
-      {/* 3D Board View (8 columns) */}
+      {/* 2D Pixel Board View (8 columns) */}
       <div className="lg:col-span-8 flex flex-col items-center justify-center w-full">
-        <ThreeGameRenderer 
-          players={players} 
+        <BoardRenderer2D
+          boardLayout={Object.entries(BOARD_LAYOUT).map(([k, v]) => ({
+            ...v,
+            tileNumber: Number(k),
+          }))}
+          players={players.map((p) => ({
+            userId: p.userId,
+            name: p.user.nickname || p.user.name,
+            characterId: p.characterId,
+            position: p.position,
+            isCurrentTurn: p.userId === activeTurnPlayer?.userId,
+          }))}
           currentTurnUserId={activeTurnPlayer?.userId}
-          activeDiceValue={rolledValue}
+          activeCutscene={
+            activeCutscene
+              ? {
+                  type:
+                    activeCutscene.type === "hazard"
+                      ? "hazard"
+                      : activeCutscene.type === "boost"
+                      ? "boost"
+                      : activeCutscene.type === "victory"
+                      ? "victory"
+                      : null,
+                  message: activeCutscene.message,
+                }
+              : undefined
+          }
         />
       </div>
 
       {/* Controller & Players turns sidebar (4 columns) */}
       <div className="lg:col-span-4 flex flex-col gap-6">
+        {/* Action Cards & Ability Quick Menu */}
+        <div className="bg-[#232129] border border-[#4B4A57]/30 rounded-lg p-5 flex flex-col gap-4 shadow-xl">
+          <div className="flex items-center justify-between border-b border-[#4B4A57]/30 pb-3">
+            <span className="font-press-start text-xs text-[#E8A33D] flex items-center gap-2">
+              <Zap className="w-4 h-4 text-[#E8A33D]" /> CARDS &amp; ABILITIES
+            </span>
+          </div>
+
+          {/* Player Held Cards */}
+          <div className="flex flex-col gap-2">
+            <span className="text-[11px] font-mono text-[#F2E9D8]/60">Hand Cards:</span>
+            {sortedPlayers.find((p) => p.userId === currentUserId)?.heldCards.length ? (
+              <div className="flex flex-wrap gap-2">
+                {sortedPlayers
+                  .find((p) => p.userId === currentUserId)
+                  ?.heldCards.map((cardId, i) => (
+                    <div
+                      key={i}
+                      className="px-3 py-1.5 bg-[#E8A33D]/10 border border-[#E8A33D]/40 rounded text-xs font-mono text-[#E8A33D] flex items-center gap-1.5"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span className="capitalize">{cardId}</span>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <span className="text-xs font-mono text-[#F2E9D8]/40 italic">Tidak ada kartu di tangan</span>
+            )}
+          </div>
+        </div>
+
         {/* Dice Roller section */}
         <div className="bg-[#232129] border border-[#4B4A57]/30 rounded-lg p-6 flex flex-col items-center justify-center gap-6 shadow-xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-[#E8A33D]/5 rounded-full blur-2xl"></div>
