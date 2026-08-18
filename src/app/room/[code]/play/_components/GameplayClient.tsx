@@ -54,8 +54,8 @@ export default function GameplayClient({
   const [rolledValue, setRolledValue] = useState<number | null>(null);
   const [modifierValue, setModifierValue] = useState<number>(0);
   const [isMuted, setIsMuted] = useState(false);
+  const [turnTimer, setTurnTimer] = useState<number>(15);
   const [activeEmotes, setActiveEmotes] = useState<ActiveEmote[]>([]);
-  const [targetSwapUser, setTargetSwapUser] = useState<string | null>(null);
   const [activeCutscene, setActiveCutscene] = useState<{
     type: "hazard" | "boost" | "event" | "powerup" | "victory";
     title: string;
@@ -66,6 +66,28 @@ export default function GameplayClient({
   const sortedPlayers = [...players].sort((a, b) => a.turnOrder - b.turnOrder);
   const activeTurnPlayer = sortedPlayers[turnIndex];
   const isMyTurn = activeTurnPlayer?.userId === currentUserId;
+
+  // Turn Timer 15s Countdown with Auto-Roll AFK Fallback
+  useEffect(() => {
+    if (status !== "IN_PROGRESS") return;
+
+    setTurnTimer(15);
+    const interval = setInterval(() => {
+      setTurnTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          // Auto roll if current turn player is AFK
+          if (isMyTurn && !isRolling && !isPendingRoll) {
+            handleRoll();
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [turnIndex, status, isMyTurn]);
 
   // Haptic & Sound notification when turn changes to user
   useEffect(() => {
@@ -340,10 +362,27 @@ export default function GameplayClient({
         <div className="bg-[#232129] border border-[#4B4A57]/30 rounded-lg p-6 flex flex-col items-center justify-center gap-6 shadow-xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-[#E8A33D]/5 rounded-full blur-2xl"></div>
 
-          <div className="flex flex-col items-center text-center gap-1">
-            <span className="font-press-start text-[9px] text-[#F2E9D8]/40 tracking-wider">TURN RESOLUTION</span>
-            <span className="text-sm font-bold text-[#F2E9D8]">
-              {isMyTurn ? "Giliranmu sekarang!" : `Menunggu giliran lawan...`}
+          {/* Turn Resolution Info & Timer */}
+          <div className="flex flex-col items-center text-center gap-2 w-full">
+            <div className="flex items-center justify-between w-full px-2">
+              <span className="font-press-start text-[9px] text-[#F2E9D8]/40 tracking-wider">TURN TIMER</span>
+              <span className={`font-mono text-xs font-bold ${turnTimer <= 5 ? "text-[#C24A4A] animate-pulse" : "text-[#E8A33D]"}`}>
+                00:{turnTimer < 10 ? `0${turnTimer}` : turnTimer}
+              </span>
+            </div>
+
+            {/* Turn Timer Progress Bar */}
+            <div className="w-full bg-[#1B1A1F] h-1.5 rounded-full overflow-hidden border border-[#4B4A57]/30">
+              <div
+                className={`h-full transition-all duration-1000 ${
+                  turnTimer <= 5 ? "bg-[#C24A4A]" : "bg-[#E8A33D]"
+                }`}
+                style={{ width: `${(turnTimer / 15) * 100}%` }}
+              />
+            </div>
+
+            <span className="text-sm font-bold text-[#F2E9D8] mt-1">
+              {isMyTurn ? "Giliranmu sekarang!" : `Menunggu giliran ${activeTurnPlayer?.user.nickname || activeTurnPlayer?.user.name}...`}
             </span>
           </div>
 

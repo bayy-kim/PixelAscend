@@ -73,6 +73,11 @@ export async function executeActionCard(
     const targetPlayer = room.players.find((p: any) => p.userId === targetUserId);
     if (!targetPlayer) return { error: "Target pemain tidak ditemukan." };
 
+    // Edge Case: Check Sable immunity (Vanish)
+    if (targetPlayer.characterId === "sable" && targetPlayer.usedAbility) {
+      return { error: "Target pemain (Sable) sedang berada dalam mode Vanish (kebal serangan)!" };
+    }
+
     const myPos = activePlayer.position;
     const targetPos = targetPlayer.position;
 
