@@ -9,9 +9,9 @@ export default auth((req) => {
   const isPublicRoute = nextUrl.pathname === "/" || nextUrl.pathname.startsWith("/_next") || nextUrl.pathname.startsWith("/static");
 
   // Protect admin routes
-  if (nextUrl.pathname.startsWith("/admin")) {
+  if (nextUrl.pathname.startsWith("/admin") && nextUrl.pathname !== "/admin/login") {
     if (!isLoggedIn) {
-      return NextResponse.redirect(new URL("/", req.url));
+      return NextResponse.redirect(new URL("/admin/login", req.url));
     }
     if (req.auth?.user?.role !== "ADMIN") {
       return NextResponse.redirect(new URL("/dashboard", req.url));

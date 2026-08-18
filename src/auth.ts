@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "@/lib/db";
 import { Role } from "@prisma/client";
@@ -10,6 +11,57 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    }),
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const adminEmail = process.env.ADMIN_EMAIL;
+        const adminPassword = process.env.ADMIN_PASSWORD;
+
+        if (!adminEmail || !adminPassword) {
+          throw new Error("Missing admin credentials in environment variables");
+        }
+
+        if (
+          credentials?.email === adminEmail &&
+          credentials?.password === adminPassword
+        ) {
+          // Find or create admin user in db to sync sessions
+          let user = await db.user.findUnique({
+            where: { email: adminEmail },
+          });
+
+          if (!user) {
+            user = await db.user.create({
+              data: {
+                email: adminEmail,
+                name: "Admin Bayu",
+                role: "ADMIN",
+                status: "ACTIVE",
+              },
+            });
+          } else if (user.role !== "ADMIN") {
+            user = await db.user.update({
+              where: { email: adminEmail },
+              data: { role: "ADMIN" },
+            });
+          }
+
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            status: user.status,
+          };
+        }
+
+        return null;
+      },
     }),
   ],
   trustHost: true,
