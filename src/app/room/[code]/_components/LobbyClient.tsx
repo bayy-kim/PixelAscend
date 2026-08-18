@@ -221,13 +221,13 @@ export default function LobbyClient({
             {/* Customization: Palette Swapper (2D CSS Filters representation mapping) */}
             <div className="flex flex-col gap-3 pt-4 border-t border-[#4B4A57]/15">
               <span className="text-xs font-press-start text-[#F2E9D8]/50">Kustomisasi Outfit Varian</span>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-2">
                 {palettes.map((palette) => (
                   <button
                     key={palette}
                     onClick={() => handlePickCharacter(selectedChar, palette)}
                     disabled={isReady}
-                    className={`h-9 px-4 rounded text-xs font-press-start border transition-all uppercase cursor-pointer ${
+                    className={`h-10 px-3.5 rounded text-[10px] font-press-start border transition-all uppercase cursor-pointer min-h-[44px] ${
                       selectedPalette === palette
                         ? "border-[#E8A33D] bg-[#E8A33D]/10 text-[#E8A33D]"
                         : "border-[#4B4A57]/30 bg-transparent text-[#F2E9D8]/60 hover:text-white"

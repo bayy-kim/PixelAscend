@@ -108,7 +108,7 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
   }, [boardLayout, tileGrid]);
 
   return (
-    <div className="relative w-full max-w-[500px] aspect-square mx-auto bg-[#1B1A1F] p-2 rounded-lg border-2 border-[#4B4A57] shadow-xl overflow-hidden select-none">
+    <div className="relative w-full max-w-[100vw] sm:max-w-[500px] aspect-square mx-auto bg-[#1B1A1F] p-1.5 sm:p-2 rounded-lg border-2 border-[#4B4A57] shadow-xl overflow-hidden select-none">
       {/* Board Theme Background */}
       <div 
         className="absolute inset-2 bg-cover bg-center opacity-40 pixelated pointer-events-none"
@@ -189,10 +189,10 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
               </span>
 
               {/* Tile Type Badge/Icon */}
-              {isHazard && <span className="text-[9px] text-purple-200">VINE</span>}
-              {isBoost && <span className="text-[9px] text-green-200">LADDER</span>}
-              {isEvent && <span className="text-[9px] text-amber-300">EVT</span>}
-              {isPowerup && <span className="text-[9px] text-yellow-300">CHEST</span>}
+              {isHazard && <span className="text-[7px] font-bold text-purple-200 truncate">VINE</span>}
+              {isBoost && <span className="text-[7px] font-bold text-green-200 truncate">LADDER</span>}
+              {isEvent && <span className="text-[7px] font-bold text-amber-300 truncate">EVT</span>}
+              {isPowerup && <span className="text-[7px] font-bold text-yellow-300 truncate">CHEST</span>}
             </div>
           );
         })}

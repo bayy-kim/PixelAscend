@@ -267,16 +267,16 @@ export default function GameplayClient({
       {/* 2D Pixel Board View (8 columns) */}
       <div className="lg:col-span-8 flex flex-col items-center justify-center w-full relative">
         {/* Quick Emote Bar Overlay (Top of board) */}
-        <div className="w-full max-w-[500px] flex items-center justify-between bg-[#232129] border border-[#4B4A57]/40 px-3 py-1.5 rounded-t-lg mb-1">
-          <div className="flex items-center gap-1.5 text-xs text-[#E8A33D] font-mono">
-            <Smile className="w-4 h-4" /> Emotes:
+        <div className="w-full max-w-[100vw] sm:max-w-[500px] flex flex-wrap items-center justify-between bg-[#232129] border border-[#4B4A57]/40 px-2 sm:px-3 py-1.5 rounded-t-lg mb-1 gap-1">
+          <div className="flex items-center gap-1 text-[11px] text-[#E8A33D] font-mono">
+            <Smile className="w-3.5 h-3.5" /> Emotes:
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1">
             {["GG! 🔥", "Oops 😅", "Lucky! 🍀", "Taunt 😈"].map((emo) => (
               <button
                 key={emo}
                 onClick={() => handleSendEmote(emo)}
-                className="px-2 py-1 bg-[#1B1A1F] hover:bg-[#4B4A57]/40 text-[#F2E9D8] text-[11px] font-mono rounded border border-[#4B4A57]/30 transition-colors active:scale-95"
+                className="px-2 py-1 bg-[#1B1A1F] hover:bg-[#4B4A57]/40 text-[#F2E9D8] text-[10px] font-mono rounded border border-[#4B4A57]/30 transition-colors active:scale-95 min-h-[32px]"
               >
                 {emo}
               </button>
@@ -284,7 +284,7 @@ export default function GameplayClient({
           </div>
           <button
             onClick={toggleSound}
-            className="p-1 text-[#F2E9D8]/60 hover:text-[#E8A33D] transition-colors"
+            className="p-1.5 text-[#F2E9D8]/60 hover:text-[#E8A33D] transition-colors min-h-[32px] flex items-center justify-center"
             title="Toggle Sound"
           >
             {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}

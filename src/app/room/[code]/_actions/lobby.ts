@@ -35,12 +35,19 @@ export async function joinLobby(roomCode: string) {
       return { error: "Room penuh." };
     }
 
-    // Pick first enabled character as default placeholder
-    const firstChar = await db.character.findFirst({
-      where: { isEnabled: true },
+    // Find all characters currently taken in this room
+    const takenCharIds = room.players.map((p: any) => p.characterId);
+
+    // Pick first enabled character that is NOT taken yet
+    const availableChar = await db.character.findFirst({
+      where: {
+        isEnabled: true,
+        id: { notIn: takenCharIds.length ? takenCharIds : [""] },
+      },
     });
-    if (!firstChar) {
-      return { error: "Tidak ada karakter aktif di katalog." };
+
+    if (!availableChar) {
+      return { error: "Semua karakter di room ini sudah dipilih." };
     }
 
     // Create RoomPlayer entry
@@ -48,7 +55,7 @@ export async function joinLobby(roomCode: string) {
       data: {
         roomId: room.id,
         userId: session.user.id,
-        characterId: firstChar.id,
+        characterId: availableChar.id,
         turnOrder: room.players.length,
         position: 0,
         isReady: false,
