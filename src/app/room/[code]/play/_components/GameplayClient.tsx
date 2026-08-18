@@ -2,11 +2,12 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { pusherClient } from "@/lib/pusher-client";
-import { rollDice } from "../../_actions/gameplay";
-import { BoardRenderer2D } from "./BoardRenderer2D";
+import { rollDice, executeActionCard, sendEmote, rematchRoom } from "../../_actions/gameplay";
+import { BoardRenderer2D, ActiveEmote } from "./BoardRenderer2D";
 import { BOARD_LAYOUT } from "@/lib/game/board";
+import { sounds, triggerHaptic } from "@/lib/audio-haptics";
 import { useRouter } from "next/navigation";
-import { Shield, Sparkles, Skull, Dices, ChevronRight, Zap, ArrowUp } from "lucide-react";
+import { Shield, Sparkles, Skull, Dices, ChevronRight, Zap, ArrowUp, Volume2, VolumeX, RotateCcw, Smile } from "lucide-react";
 
 interface PlayerData {
   userId: string;
@@ -48,10 +49,13 @@ export default function GameplayClient({
   const [status, setStatus] = useState<string>(initialStatus);
   const [isPendingRoll, startRollTransition] = useTransition();
 
-  // Animation & Cutscene states
+  // Animation, Audio & Cutscene states
   const [isRolling, setIsRolling] = useState(false);
   const [rolledValue, setRolledValue] = useState<number | null>(null);
   const [modifierValue, setModifierValue] = useState<number>(0);
+  const [isMuted, setIsMuted] = useState(false);
+  const [activeEmotes, setActiveEmotes] = useState<ActiveEmote[]>([]);
+  const [targetSwapUser, setTargetSwapUser] = useState<string | null>(null);
   const [activeCutscene, setActiveCutscene] = useState<{
     type: "hazard" | "boost" | "event" | "powerup" | "victory";
     title: string;
@@ -63,19 +67,55 @@ export default function GameplayClient({
   const activeTurnPlayer = sortedPlayers[turnIndex];
   const isMyTurn = activeTurnPlayer?.userId === currentUserId;
 
+  // Haptic & Sound notification when turn changes to user
+  useEffect(() => {
+    if (isMyTurn) {
+      triggerHaptic("turn");
+    }
+  }, [isMyTurn]);
+
   useEffect(() => {
     const channelName = `presence-room-${roomCode}`;
     const channel = pusherClient.subscribe(channelName);
 
+    // Real-time player emote handler
+    channel.bind("player-emote", (data: any) => {
+      const emoteObj: ActiveEmote = {
+        id: Math.random().toString(),
+        userId: data.userId,
+        characterId: data.characterId,
+        emote: data.emote,
+      };
+      setActiveEmotes((prev) => [...prev, emoteObj]);
+      setTimeout(() => {
+        setActiveEmotes((prev) => prev.filter((e) => e.id !== emoteObj.id));
+      }, 3000);
+    });
+
+    // Real-time card used handler
+    channel.bind("card-used", (data: any) => {
+      sounds.playBoost();
+      triggerHaptic("medium");
+      router.refresh();
+    });
+
+    // Real-time room rematched handler
+    channel.bind("room-rematched", () => {
+      router.push(`/room/${roomCode}`);
+    });
+
     // Turn resolved handler
     channel.bind("turn-resolved", (data: any) => {
-      // 1. Play dice roll animation first
+      // 1. Play dice roll animation & sound first
       setIsRolling(true);
       setRolledValue(data.diceRoll);
       setModifierValue(data.rollModifier);
+      sounds.playDiceRoll();
+      triggerHaptic("light");
 
       setTimeout(() => {
         setIsRolling(false);
+        sounds.playStep();
         
         // 2. Refresh database data model locally
         router.refresh();
@@ -83,13 +123,21 @@ export default function GameplayClient({
         // 3. Play cutscenes based on target tile effect triggered
         if (data.effectTriggered) {
           const fx = data.effectTriggered;
+          if (fx.type === "hazard") {
+            sounds.playHazard();
+            triggerHaptic("hazard");
+          } else if (fx.type === "boost") {
+            sounds.playBoost();
+            triggerHaptic("medium");
+          }
+
           setActiveCutscene({
             type: fx.type,
             title: fx.name,
             message: fx.description,
           });
           
-          // Clear cutscene overlay automatically after 2s
+          // Clear cutscene overlay automatically after 2.5s
           setTimeout(() => {
             setActiveCutscene(null);
           }, 2500);
@@ -99,6 +147,8 @@ export default function GameplayClient({
         setTurnIndex(data.nextTurnIndex);
         if (data.winnerUserId) {
           setStatus("FINISHED");
+          sounds.playVictory();
+          triggerHaptic("heavy");
           setActiveCutscene({
             type: "victory",
             title: "VICTORY SUMMIT 100",
@@ -116,6 +166,7 @@ export default function GameplayClient({
   // Handle server actions trigger
   const handleRoll = () => {
     if (isRolling || isPendingRoll) return;
+    triggerHaptic("light");
 
     startRollTransition(async () => {
       const res = await rollDice(roomCode);
@@ -123,6 +174,38 @@ export default function GameplayClient({
         alert(res.error);
       }
     });
+  };
+
+  const handleSendEmote = async (emote: string) => {
+    triggerHaptic("light");
+    await sendEmote(roomCode, emote);
+  };
+
+  const handleUseCard = async (cardId: string) => {
+    if (cardId === "swap") {
+      const otherPlayers = players.filter((p) => p.userId !== currentUserId);
+      if (!otherPlayers.length) return;
+      const targetId = prompt(
+        "Pilih ID pemain lawan untuk ditukar (ketik ID/nama):",
+        otherPlayers[0].userId
+      );
+      if (!targetId) return;
+      const res = await executeActionCard(roomCode, cardId, targetId);
+      if (res?.error) alert(res.error);
+    } else {
+      const res = await executeActionCard(roomCode, cardId);
+      if (res?.error) alert(res.error);
+    }
+  };
+
+  const handleRematch = async () => {
+    const res = await rematchRoom(roomCode);
+    if (res?.error) alert(res.error);
+  };
+
+  const toggleSound = () => {
+    const muted = sounds.toggleMute();
+    setIsMuted(muted);
   };
 
   return (
@@ -160,7 +243,32 @@ export default function GameplayClient({
       )}
 
       {/* 2D Pixel Board View (8 columns) */}
-      <div className="lg:col-span-8 flex flex-col items-center justify-center w-full">
+      <div className="lg:col-span-8 flex flex-col items-center justify-center w-full relative">
+        {/* Quick Emote Bar Overlay (Top of board) */}
+        <div className="w-full max-w-[500px] flex items-center justify-between bg-[#232129] border border-[#4B4A57]/40 px-3 py-1.5 rounded-t-lg mb-1">
+          <div className="flex items-center gap-1.5 text-xs text-[#E8A33D] font-mono">
+            <Smile className="w-4 h-4" /> Emotes:
+          </div>
+          <div className="flex items-center gap-1">
+            {["GG! 🔥", "Oops 😅", "Lucky! 🍀", "Taunt 😈"].map((emo) => (
+              <button
+                key={emo}
+                onClick={() => handleSendEmote(emo)}
+                className="px-2 py-1 bg-[#1B1A1F] hover:bg-[#4B4A57]/40 text-[#F2E9D8] text-[11px] font-mono rounded border border-[#4B4A57]/30 transition-colors active:scale-95"
+              >
+                {emo}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={toggleSound}
+            className="p-1 text-[#F2E9D8]/60 hover:text-[#E8A33D] transition-colors"
+            title="Toggle Sound"
+          >
+            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
+        </div>
+
         <BoardRenderer2D
           boardLayout={Object.entries(BOARD_LAYOUT).map(([k, v]) => ({
             ...v,
@@ -174,6 +282,8 @@ export default function GameplayClient({
             isCurrentTurn: p.userId === activeTurnPlayer?.userId,
           }))}
           currentTurnUserId={activeTurnPlayer?.userId}
+          activeEmotes={activeEmotes}
+          onSkipCutscene={() => setActiveCutscene(null)}
           activeCutscene={
             activeCutscene
               ? {
@@ -210,13 +320,14 @@ export default function GameplayClient({
                 {sortedPlayers
                   .find((p) => p.userId === currentUserId)
                   ?.heldCards.map((cardId, i) => (
-                    <div
+                    <button
                       key={i}
-                      className="px-3 py-1.5 bg-[#E8A33D]/10 border border-[#E8A33D]/40 rounded text-xs font-mono text-[#E8A33D] flex items-center gap-1.5"
+                      onClick={() => handleUseCard(cardId)}
+                      className="px-3 py-1.5 bg-[#E8A33D]/10 hover:bg-[#E8A33D]/20 border border-[#E8A33D]/40 rounded text-xs font-mono text-[#E8A33D] flex items-center gap-1.5 cursor-pointer transition-colors active:scale-95 min-h-[36px]"
                     >
                       <Sparkles className="w-3 h-3" />
                       <span className="capitalize">{cardId}</span>
-                    </div>
+                    </button>
                   ))}
               </div>
             ) : (
@@ -270,6 +381,16 @@ export default function GameplayClient({
             >
               <Dices className="w-4 h-4" />
               {isPendingRoll ? "ROLLING..." : "KOCOK DADU"}
+            </button>
+          )}
+
+          {/* Rematch Button when FINISHED */}
+          {status === "FINISHED" && (
+            <button
+              onClick={handleRematch}
+              className="w-full h-14 flex items-center justify-center gap-3 bg-[#5FA35A] hover:bg-[#6EB668] text-[#1B1A1F] font-press-start text-xs tracking-wider rounded-md border-b-4 border-[#3D6B39] transition-all cursor-pointer shadow-lg active:translate-y-[2px]"
+            >
+              <RotateCcw className="w-4 h-4" /> MAIN LAGI (REMATCH)
             </button>
           )}
         </div>

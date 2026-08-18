@@ -18,15 +18,24 @@ export interface BoardTileEffect extends TileEffect {
   tileNumber: number;
 }
 
+export interface ActiveEmote {
+  id: string;
+  characterId: string;
+  emote: string;
+  userId: string;
+}
+
 interface BoardRenderer2DProps {
   boardLayout: BoardTileEffect[];
   players: PlayerRenderState[];
   currentTurnUserId?: string;
   onTileClick?: (tileIndex: number) => void;
+  activeEmotes?: ActiveEmote[];
   activeCutscene?: {
     type: "hazard" | "boost" | "victory" | null;
     message?: string;
   };
+  onSkipCutscene?: () => void;
 }
 
 export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
@@ -34,7 +43,9 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
   players,
   currentTurnUserId,
   onTileClick,
+  activeEmotes = [],
   activeCutscene,
+  onSkipCutscene,
 }) => {
   // Precompute 100 tile positions (Boustrophedon grid: 10x10)
   // Tile 1 is at Bottom-Left, Tile 100 at Top-Left
@@ -225,6 +236,19 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
                 size={32}
               />
 
+              {/* Real-time Floating Speech Bubble Emote */}
+              {activeEmotes.filter((e) => e.userId === player.userId).map((e) => (
+                <motion.div
+                  key={e.id}
+                  initial={{ opacity: 0, y: 10, scale: 0.5 }}
+                  animate={{ opacity: 1, y: -28, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                  className="absolute top-0 bg-[#F2E9D8] text-[#1B1A1F] px-2 py-0.5 rounded-full border border-[#1B1A1F] shadow-lg text-[10px] font-bold font-mono whitespace-nowrap z-20 pointer-events-none"
+                >
+                  {e.emote}
+                </motion.div>
+              ))}
+
               {/* Player Name Tag */}
               <span className="mt-[-4px] bg-[#1B1A1F]/90 text-[#F2E9D8] text-[7px] px-1 rounded border border-[#4B4A57] truncate max-w-[40px]">
                 {player.name}
@@ -234,22 +258,23 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
         );
       })}
 
-      {/* Cutscene / Effect Overlay */}
+      {/* Cutscene / Effect Overlay (Tap to Skip gesture supported) */}
       <AnimatePresence>
         {activeCutscene && activeCutscene.type && (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className={`absolute inset-0 z-30 flex flex-col items-center justify-center p-4 backdrop-blur-xs text-center ${
+            onClick={onSkipCutscene}
+            className={`absolute inset-0 z-30 flex flex-col items-center justify-center p-4 backdrop-blur-xs text-center cursor-pointer ${
               activeCutscene.type === "hazard"
-                ? "bg-[#7C4DA8]/80 text-white"
+                ? "bg-[#7C4DA8]/90 text-white"
                 : activeCutscene.type === "boost"
-                ? "bg-[#5FA35A]/80 text-white"
+                ? "bg-[#5FA35A]/90 text-white"
                 : "bg-[#1B1A1F]/90 text-[#E8A33D]"
             }`}
           >
-            <h3 className="font-pixel text-lg mb-2 uppercase tracking-wide">
+            <h3 className="font-press-start text-lg mb-2 uppercase tracking-wide">
               {activeCutscene.type === "hazard"
                 ? "SHADOW VINE!"
                 : activeCutscene.type === "boost"
@@ -257,6 +282,9 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
                 : "VICTORY!"}
             </h3>
             <p className="font-sans text-sm text-[#F2E9D8]">{activeCutscene.message}</p>
+            <span className="mt-4 text-[9px] font-mono text-white/60 tracking-widest animate-pulse">
+              [ TAP UNTUK SKIP ]
+            </span>
           </motion.div>
         )}
       </AnimatePresence>
