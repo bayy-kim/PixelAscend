@@ -145,6 +145,7 @@ export async function selectCharacterAndPalette(
       return { error: "Karakter ini sudah dipilih pemain lain." };
     }
 
+    // Update player character selection
     await db.roomPlayer.update({
       where: {
         roomId_userId: {
@@ -167,9 +168,9 @@ export async function selectCharacterAndPalette(
 
     revalidatePath(`/room/${roomCode}`);
     return { success: true };
-  } catch (err) {
-    console.error(err);
-    return { error: "Gagal memilih karakter." };
+  } catch (err: any) {
+    console.error("selectCharacterAndPalette error:", err);
+    return { error: err?.message || "Gagal memilih karakter." };
   }
 }
 
