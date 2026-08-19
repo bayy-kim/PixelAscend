@@ -2,20 +2,51 @@ import { requireAdmin } from "@/app/admin/_lib/require-admin";
 import { db } from "@/lib/db";
 import { toggleUserSuspension } from "@/app/admin/_actions/moderation";
 import Image from "next/image";
+import { Search } from "lucide-react";
 
-export default async function AdminUsersPage() {
+interface PageProps {
+  searchParams: Promise<{ q?: string }>;
+}
+
+export default async function AdminUsersPage({ searchParams }: PageProps) {
   await requireAdmin();
+  const resolvedParams = await searchParams;
+  const query = resolvedParams.q || "";
 
-  // Load all users sorted by creation date
+  // Filter users by nickname/name/email if query present
   const users = await db.user.findMany({
+    where: query
+      ? {
+          OR: [
+            { name: { contains: query, mode: "insensitive" } },
+            { nickname: { contains: query, mode: "insensitive" } },
+            { email: { contains: query, mode: "insensitive" } },
+          ],
+        }
+      : undefined,
     orderBy: { createdAt: "desc" },
+    take: 50,
   });
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-xl font-press-start text-[#E8A33D]">User Management</h1>
-        <p className="text-xs text-[#F2E9D8]/60 font-mono">Daftar pengguna terdaftar di PixelAscend</p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-xl font-press-start text-[#E8A33D]">User Management</h1>
+          <p className="text-xs text-[#F2E9D8]/60 font-mono">Daftar pengguna terdaftar di PixelAscend</p>
+        </div>
+
+        {/* Search Bar */}
+        <form method="GET" className="relative w-full sm:w-72">
+          <Search className="w-4 h-4 text-[#F2E9D8]/40 absolute left-3 top-3" />
+          <input
+            type="text"
+            name="q"
+            defaultValue={query}
+            placeholder="Cari user / email..."
+            className="w-full bg-[#232129] border border-[#4B4A57]/30 rounded-lg pl-9 pr-4 py-2 text-xs font-mono text-[#F2E9D8] focus:outline-none focus:border-[#E8A33D]"
+          />
+        </form>
       </div>
 
       <div className="bg-[#232129] border border-[#4B4A57]/30 rounded-lg overflow-hidden shadow-md">

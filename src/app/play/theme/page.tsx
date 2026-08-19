@@ -26,17 +26,21 @@ async function ThemeList() {
           className="bg-[#232129] border border-[#4B4A57]/30 rounded-lg p-6 flex flex-col justify-between gap-6 shadow-xl hover:border-[#E8A33D]/50 transition-all group"
         >
           <div className="flex flex-col gap-4">
-            {/* Board Preview placeholder */}
-            <div className="relative w-full h-40 bg-[#1B1A1F] rounded overflow-hidden border border-[#4B4A57]/20 flex items-center justify-center">
-              {/* Retro bands background style to avoid AI slop gradient (DESIGN.md) */}
-              <div className="absolute inset-0 bg-[#7C4DA8]/10 flex flex-col justify-between p-2">
-                <div className="h-4 bg-[#7C4DA8]/20 w-1/2 rounded"></div>
-                <div className="h-4 bg-[#5FA35A]/20 w-3/4 rounded self-end"></div>
-                <div className="h-4 bg-[#E8A33D]/10 w-2/3 rounded"></div>
+            {/* Board Preview Original Texture */}
+            <div className="relative w-full h-44 bg-[#1B1A1F] rounded overflow-hidden border border-[#4B4A57]/30 flex items-center justify-center group-hover:border-[#E8A33D]/60 transition-colors">
+              <Image
+                src={theme.boardArtUrl || "/themes/wanderers-path/board.png"}
+                alt={theme.name}
+                fill
+                className="object-cover pixelated opacity-80 group-hover:opacity-100 transition-opacity"
+                unoptimized
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#1B1A1F] via-transparent to-transparent opacity-80" />
+              <div className="absolute bottom-2 left-3 flex items-center gap-2">
+                <span className="font-press-start text-[9px] text-[#E8A33D] bg-[#1B1A1F]/90 px-2 py-1 rounded border border-[#E8A33D]/40">
+                  PIXEL BOARD 10x10
+                </span>
               </div>
-              <span className="font-press-start text-[9px] text-[#F2E9D8]/30 group-hover:text-[#E8A33D] transition-colors">
-                [BOARD PREVIEW]
-              </span>
             </div>
 
             <div className="flex flex-col gap-2">

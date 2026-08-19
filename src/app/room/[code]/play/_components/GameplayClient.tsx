@@ -56,6 +56,7 @@ export default function GameplayClient({
   const [isMuted, setIsMuted] = useState(false);
   const [turnTimer, setTurnTimer] = useState<number>(15);
   const [activeEmotes, setActiveEmotes] = useState<ActiveEmote[]>([]);
+  const [showSwapModal, setShowSwapModal] = useState(false);
   const [activeCutscene, setActiveCutscene] = useState<{
     type: "hazard" | "boost" | "event" | "powerup" | "victory";
     title: string;
@@ -208,20 +209,17 @@ export default function GameplayClient({
     await sendEmote(roomCode, emote);
   };
 
-  const handleUseCard = async (cardId: string) => {
-    if (cardId === "swap") {
-      const otherPlayers = players.filter((p) => p.userId !== currentUserId);
-      if (!otherPlayers.length) return;
-      const targetId = prompt(
-        "Pilih ID pemain lawan untuk ditukar (ketik ID/nama):",
-        otherPlayers[0].userId
-      );
-      if (!targetId) return;
-      const res = await executeActionCard(roomCode, cardId, targetId);
-      if (res?.error) alert(res.error);
+  const handleUseCard = async (cardId: string, targetUserId?: string) => {
+    if (cardId === "swap" && !targetUserId) {
+      setShowSwapModal(true);
+      return;
+    }
+
+    const res = await executeActionCard(roomCode, cardId, targetUserId);
+    if (res?.error) {
+      alert(res.error);
     } else {
-      const res = await executeActionCard(roomCode, cardId);
-      if (res?.error) alert(res.error);
+      setShowSwapModal(false);
     }
   };
 
@@ -486,6 +484,40 @@ export default function GameplayClient({
           </div>
         </div>
       </div>
+
+      {/* Target Player Swap Card Selection Modal */}
+      {showSwapModal && (
+        <div className="fixed inset-0 bg-[#1B1A1F]/90 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="w-full max-w-sm bg-[#232129] border-2 border-[#E8A33D] rounded-xl p-6 flex flex-col gap-4 shadow-2xl">
+            <div className="flex flex-col gap-1">
+              <span className="font-press-start text-xs text-[#E8A33D]">SWAP ACTION CARD</span>
+              <p className="text-xs text-[#F2E9D8]/70 font-mono">Pilih pemain lawan untuk bertukar posisi tile secara instan:</p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {players
+                .filter((p) => p.userId !== currentUserId)
+                .map((p) => (
+                  <button
+                    key={p.userId}
+                    onClick={() => handleUseCard("swap", p.userId)}
+                    className="w-full p-3 bg-[#1B1A1F] hover:bg-[#E8A33D]/10 border border-[#4B4A57]/30 hover:border-[#E8A33D]/60 rounded text-xs font-mono text-left flex items-center justify-between text-[#F2E9D8] transition-colors cursor-pointer"
+                  >
+                    <span className="font-bold">{p.user.nickname || p.user.name}</span>
+                    <span className="text-[10px] text-[#5FA35A] font-press-start">TILE {p.position}</span>
+                  </button>
+                ))}
+            </div>
+
+            <button
+              onClick={() => setShowSwapModal(false)}
+              className="mt-2 w-full py-2 bg-[#4B4A57]/20 hover:bg-[#4B4A57]/40 text-[#F2E9D8]/60 text-xs font-mono rounded border border-[#4B4A57]/30 transition-colors"
+            >
+              Batal
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

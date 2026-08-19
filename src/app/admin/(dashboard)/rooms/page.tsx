@@ -1,13 +1,26 @@
 import { requireAdmin } from "@/app/admin/_lib/require-admin";
 import { db } from "@/lib/db";
 import { forceEndRoom } from "@/app/admin/_actions/moderation";
+import { Search } from "lucide-react";
 
-export default async function AdminRoomsPage() {
+interface PageProps {
+  searchParams: Promise<{ q?: string }>;
+}
+
+export default async function AdminRoomsPage({ searchParams }: PageProps) {
   await requireAdmin();
+  const resolvedParams = await searchParams;
+  const query = resolvedParams.q || "";
 
-  // Load all rooms sorted by creation date
+  // Load rooms with optional search filter by code
   const rooms = await db.room.findMany({
+    where: query
+      ? {
+          code: { contains: query.toUpperCase() },
+        }
+      : undefined,
     orderBy: { createdAt: "desc" },
+    take: 50,
     include: {
       theme: true,
       players: {
@@ -20,9 +33,23 @@ export default async function AdminRoomsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-xl font-press-start text-[#E8A33D]">Room Moderation</h1>
-        <p className="text-xs text-[#F2E9D8]/60 font-mono">Daftar room game aktif & selesai di PixelAscend</p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-xl font-press-start text-[#E8A33D]">Room Moderation</h1>
+          <p className="text-xs text-[#F2E9D8]/60 font-mono">Daftar room game aktif & selesai di PixelAscend</p>
+        </div>
+
+        {/* Search Bar */}
+        <form method="GET" className="relative w-full sm:w-72">
+          <Search className="w-4 h-4 text-[#F2E9D8]/40 absolute left-3 top-3" />
+          <input
+            type="text"
+            name="q"
+            defaultValue={query}
+            placeholder="Cari kode room..."
+            className="w-full bg-[#232129] border border-[#4B4A57]/30 rounded-lg pl-9 pr-4 py-2 text-xs font-mono text-[#F2E9D8] focus:outline-none focus:border-[#E8A33D]"
+          />
+        </form>
       </div>
 
       <div className="bg-[#232129] border border-[#4B4A57]/30 rounded-lg overflow-hidden shadow-md">

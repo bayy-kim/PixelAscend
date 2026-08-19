@@ -125,7 +125,7 @@ export default async function DashboardPage() {
           {/* Stats Cards */}
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-[#232129] border border-[#4B4A57]/30 rounded-lg p-4 flex flex-col items-center justify-center text-center shadow-md">
-              <span className="text-[10px] font-press-start text-[#F2E9D8]/50 mb-2">MARET</span>
+              <span className="text-[10px] font-press-start text-[#F2E9D8]/50 mb-2">TOTAL</span>
               <span className="text-2xl font-press-start font-bold text-[#F2E9D8]">{totalGames}</span>
               <span className="text-[9px] font-mono text-[#F2E9D8]/30 mt-1 uppercase">Matches</span>
             </div>

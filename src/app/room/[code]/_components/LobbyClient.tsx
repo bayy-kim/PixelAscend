@@ -5,8 +5,8 @@ import { pusherClient } from "@/lib/pusher-client";
 import { selectCharacterAndPalette, toggleReady, startGame, leaveLobby } from "../_actions/lobby";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { User, Check, Play, LogOut } from "lucide-react";
-import { CharacterIcon } from "@/app/_components/CharacterIcons";
+import { User, Check, Play, LogOut, Copy, Share2, CheckCheck } from "lucide-react";
+import { PixelSprite } from "@/app/_components/PixelSprite";
 
 interface CharacterData {
   id: string;
@@ -50,6 +50,7 @@ export default function LobbyClient({
   const [players, setPlayers] = useState<PlayerData[]>(initialPlayers);
   const [selectedChar, setSelectedChar] = useState<string>("");
   const [selectedPalette, setSelectedPalette] = useState<string>("default");
+  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const [isPendingReady, startReadyTransition] = useTransition();
@@ -141,6 +142,23 @@ export default function LobbyClient({
     });
   };
 
+  const handleCopyLink = () => {
+    if (typeof window !== "undefined") {
+      const url = `${window.location.origin}/room/${roomCode}`;
+      navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleShareWhatsApp = () => {
+    if (typeof window !== "undefined") {
+      const url = `${window.location.origin}/room/${roomCode}`;
+      const text = `Ayo main Ular Tangga PixelAscend bersamaku! Kode Room: ${roomCode}. Masuk lewat link ini: ${url}`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+    }
+  };
+
   const handleLeave = async () => {
     await leaveLobby(roomCode);
     router.push("/dashboard");
@@ -156,9 +174,28 @@ export default function LobbyClient({
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full max-w-7xl mx-auto px-4 py-8">
       {/* Left panel: Character Selection (7 columns) */}
       <div className="lg:col-span-8 flex flex-col gap-6 bg-[#232129] border border-[#4B4A57]/30 rounded-lg p-6 shadow-xl">
-        <div className="flex flex-col gap-2">
-          <span className="font-press-start text-[10px] text-[#E8A33D]">LOBBY ROOM: {roomCode}</span>
-          <h1 className="text-2xl font-bold font-sans">Pilih Karakter & Kosmetik</h1>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#4B4A57]/20 pb-4">
+          <div className="flex flex-col gap-1">
+            <span className="font-press-start text-[10px] text-[#E8A33D]">LOBBY ROOM: {roomCode}</span>
+            <h1 className="text-xl sm:text-2xl font-bold font-sans">Pilih Karakter & Kosmetik</h1>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={handleCopyLink}
+              className="flex-1 sm:flex-none px-3 py-2 bg-[#1B1A1F] hover:bg-[#4B4A57]/40 text-[#F2E9D8] rounded border border-[#4B4A57]/40 text-xs font-mono flex items-center justify-center gap-1.5 transition-colors cursor-pointer min-h-[38px]"
+            >
+              {copied ? <CheckCheck className="w-3.5 h-3.5 text-[#5FA35A]" /> : <Copy className="w-3.5 h-3.5 text-[#E8A33D]" />}
+              <span>{copied ? "Tersalin!" : "Salin Link"}</span>
+            </button>
+            <button
+              onClick={handleShareWhatsApp}
+              className="flex-1 sm:flex-none px-3 py-2 bg-[#5FA35A]/10 hover:bg-[#5FA35A]/20 text-[#5FA35A] rounded border border-[#5FA35A]/30 text-xs font-mono flex items-center justify-center gap-1.5 transition-colors cursor-pointer min-h-[38px]"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>WhatsApp</span>
+            </button>
+          </div>
         </div>
 
         {/* Character grid */}
@@ -182,8 +219,8 @@ export default function LobbyClient({
                     : "border-transparent hover:border-[#4B4A57]"
                 }`}
               >
-                {/* Character preview sprite representation */}
-                <CharacterIcon characterId={char.id} className="w-14 h-14" />
+                {/* Character preview animated sprite representation */}
+                <PixelSprite characterId={char.id} direction="down" isWalking={isSelected} size={48} />
 
                 <div className="flex flex-col items-center text-center gap-1">
                   <span className="text-xs font-bold leading-tight font-sans text-[#F2E9D8] truncate max-w-[100px]">
@@ -209,7 +246,7 @@ export default function LobbyClient({
           <div className="bg-[#1B1A1F] rounded p-6 border border-[#4B4A57]/20 flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row items-center gap-6">
               {/* Selected representation */}
-              <CharacterIcon characterId={activeCharData.id} className="w-16 h-16" />
+              <PixelSprite characterId={activeCharData.id} direction="down" isWalking={true} size={56} />
 
               <div className="flex-1 flex flex-col gap-2">
                 <span className="text-sm font-press-start text-[#E8A33D]">
