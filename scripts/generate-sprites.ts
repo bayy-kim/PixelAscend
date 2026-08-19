@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
+// High-Detail 2D Pixel Chibi Generator (32x32 per frame, 96x128 total per sheet)
 function generatePNG(width: number, height: number, drawPixel: (x: number, y: number) => [number, number, number, number]): Buffer {
   const bytesPerPixel = 4;
   const lineSize = 1 + width * bytesPerPixel;
@@ -95,15 +96,24 @@ function generatePNG(width: number, height: number, drawPixel: (x: number, y: nu
   return Buffer.concat([pngSignature, ihdrChunk, idatChunk, iendChunk]);
 }
 
-const CHAR_COLORS: Record<string, { body: [number, number, number], outfit: [number, number, number], detail: [number, number, number] }> = {
-  dawn: { body: [220, 180, 140], outfit: [60, 120, 210], detail: [240, 200, 80] },
-  wren: { body: [235, 210, 185], outfit: [140, 80, 190], detail: [200, 160, 255] },
-  thistle: { body: [210, 165, 125], outfit: [140, 90, 50], detail: [180, 180, 190] },
-  brack: { body: [90, 160, 70], outfit: [100, 70, 45], detail: [200, 190, 140] },
-  ember: { body: [210, 70, 50], outfit: [150, 40, 30], detail: [240, 180, 50] },
-  marrow: { body: [225, 225, 215], outfit: [70, 65, 60], detail: [180, 180, 170] },
-  sable: { body: [210, 175, 140], outfit: [30, 28, 35], detail: [80, 75, 95] },
-  halcyon: { body: [215, 170, 130], outfit: [120, 80, 45], detail: [85, 55, 30] }
+interface CharStyle {
+  skin: [number, number, number];
+  hair: [number, number, number];
+  outfit: [number, number, number];
+  accent: [number, number, number];
+  eye: [number, number, number];
+  type: "human" | "elf" | "dwarf" | "orc" | "dragon" | "skeleton" | "hooded" | "centaur";
+}
+
+const CHAR_STYLES: Record<string, CharStyle> = {
+  dawn: { skin: [235, 190, 150], hair: [115, 65, 30], outfit: [70, 110, 180], accent: [230, 190, 60], eye: [25, 25, 30], type: "human" },
+  wren: { skin: [240, 215, 190], hair: [210, 205, 230], outfit: [120, 60, 170], accent: [170, 130, 230], eye: [80, 170, 150], type: "elf" },
+  thistle: { skin: [215, 170, 130], hair: [180, 180, 190], outfit: [130, 85, 45], accent: [180, 110, 40], eye: [30, 30, 35], type: "dwarf" },
+  brack: { skin: [95, 165, 75], hair: [40, 55, 35], outfit: [90, 65, 45], accent: [190, 180, 140], eye: [220, 50, 40], type: "orc" },
+  ember: { skin: [210, 60, 45], hair: [160, 40, 30], outfit: [140, 45, 35], accent: [245, 175, 45], eye: [250, 210, 50], type: "dragon" },
+  marrow: { skin: [230, 230, 220], hair: [60, 55, 50], outfit: [85, 75, 65], accent: [160, 160, 150], eye: [15, 15, 20], type: "skeleton" },
+  sable: { skin: [220, 185, 150], hair: [30, 25, 35], outfit: [25, 22, 30], accent: [160, 80, 220], eye: [190, 120, 250], type: "hooded" },
+  halcyon: { skin: [220, 175, 135], hair: [95, 60, 35], outfit: [115, 80, 45], accent: [55, 120, 80], eye: [40, 35, 30], type: "centaur" }
 };
 
 const characters = ['dawn', 'wren', 'thistle', 'brack', 'ember', 'marrow', 'sable', 'halcyon'];
@@ -114,66 +124,136 @@ if (!fs.existsSync(outputDir)) {
 }
 
 characters.forEach((char) => {
-  const palette = CHAR_COLORS[char];
+  const s = CHAR_STYLES[char];
+
   const pngBuffer = generatePNG(96, 128, (x, y) => {
-    const col = Math.floor(x / 32); // 0, 1, 2 (walk frame)
+    const col = Math.floor(x / 32); // 0, 1, 2
     const row = Math.floor(y / 32); // 0: Down, 1: Left, 2: Right, 3: Up
     const px = x % 32;
     const py = y % 32;
 
-    const isHead = (px >= 10 && px <= 21 && py >= 4 && py <= 15);
-    const isBody = (px >= 8 && px <= 23 && py >= 16 && py <= 27);
-    const legOffset = (col === 1 ? -1 : col === 2 ? 1 : 0);
+    const OUTLINE: [number, number, number, number] = [20, 18, 26, 255];
+    const SHADOW: [number, number, number, number] = [0, 0, 0, 80];
+
+    // Feet shadow ellipse (py = 28..30, px = 10..21)
+    if (py >= 28 && py <= 30 && px >= 10 && px <= 21 && s.type !== "centaur") {
+      if ((py === 29 && px >= 11 && px <= 20) || (py === 28 && px >= 13 && px <= 18)) {
+        return SHADOW;
+      }
+    }
+
+    // Centaur Horse lower body (py 18..28)
+    if (s.type === "centaur" && py >= 18 && py <= 28) {
+      if (px >= 6 && px <= 25 && py <= 27) {
+        if (px === 6 || px === 25 || py === 18 || py === 27) return OUTLINE;
+        // Horse body color
+        return [130, 85, 45, 255];
+      }
+    }
+
+    // Skeleton custom skull
+    if (s.type === "skeleton") {
+      const isSkull = (px >= 10 && px <= 21 && py >= 5 && py <= 15);
+      if (isSkull) {
+        if (px === 10 || px === 21 || py === 5 || py === 15) return OUTLINE;
+        // Eye sockets
+        if ((py === 9 || py === 10) && (px === 13 || px === 14 || px === 17 || px === 18)) {
+          return [20, 20, 25, 255];
+        }
+        // Nose gap
+        if (py === 12 && (px === 15 || px === 16)) return [20, 20, 25, 255];
+        return [230, 230, 220, 255];
+      }
+      // Ribs & Bones
+      if (py >= 16 && py <= 27 && px >= 11 && px <= 20) {
+        if (px === 11 || px === 20 || py === 16 || py === 27) return OUTLINE;
+        if (py % 2 === 0) return [200, 200, 190, 255];
+        return [40, 38, 42, 255];
+      }
+      return [0, 0, 0, 0];
+    }
+
+    // Head definition (px: 9..22, py: 4..16)
+    const isHead = (px >= 9 && px <= 22 && py >= 4 && py <= 16);
+    // Body definition (px: 10..21, py: 17..27)
+    const isBody = (px >= 10 && px <= 21 && py >= 17 && py <= 27);
 
     if (!isHead && !isBody) {
       return [0, 0, 0, 0];
     }
 
-    if (px === 10 || px === 21 || py === 4 || py === 15 || px === 8 || px === 23 || py === 16 || py === 27) {
-      return [20, 18, 24, 255];
+    // Black 1px outline
+    if (
+      px === 9 || px === 22 || py === 4 || py === 16 ||
+      (py >= 17 && (px === 10 || px === 21 || py === 27))
+    ) {
+      return OUTLINE;
     }
 
-    if (row === 0 && (py === 9 || py === 10) && (px === 13 || px === 18)) {
-      return [20, 18, 24, 255];
+    // Hair Top (py 4..8)
+    if (py >= 4 && py <= 8 && s.type !== "hooded") {
+      return [...s.hair, 255];
     }
 
-    if (py <= 14) {
-      return [...palette.body, 255];
+    // Eyes (row 0: Front, row 1/2: Side)
+    if (row === 0 && (py === 10 || py === 11)) {
+      if (px === 13 || px === 18) return [...s.eye, 255];
+      if (px === 14 || px === 19) return [255, 255, 255, 255]; // Eye shine highlight
+    } else if ((row === 1 || row === 2) && (py === 10 || py === 11)) {
+      const eyeX = row === 1 ? 12 : 19;
+      if (px === eyeX) return [...s.eye, 255];
     }
 
-    if (py >= 24 && ((px >= 10 && px <= 13) || (px >= 18 && px <= 21))) {
-      const legX = px + legOffset;
-      if (legX >= 9 && legX <= 22) {
-        return [...palette.detail, 255];
+    // Elf ears (px 7..8 & 23..24)
+    if (s.type === "elf" && (py === 10 || py === 11)) {
+      if (px === 8 || px === 23) return [...s.skin, 255];
+    }
+
+    // Dragon Horns
+    if (s.type === "dragon" && py <= 6) {
+      if (px === 10 || px === 21) return [...s.accent, 255];
+    }
+
+    // Orc Tusks
+    if (s.type === "orc" && py === 13 && (px === 13 || px === 18)) {
+      return [240, 240, 230, 255];
+    }
+
+    // Hooded cloak (Sable)
+    if (s.type === "hooded" && py <= 15) {
+      if (py >= 9 && py <= 13 && px >= 12 && px <= 19) {
+        return [...s.skin, 255]; // Pale face sliver
+      }
+      return [...s.outfit, 255];
+    }
+
+    // Head Face Fill
+    if (py <= 16) {
+      return [...s.skin, 255];
+    }
+
+    // Body Outfit & Armor Details
+    if (py >= 17 && py <= 24) {
+      // Armor / Collar detail
+      if (py === 17 || py === 18) return [...s.accent, 255];
+      return [...s.outfit, 255];
+    }
+
+    // Legs walk bounce (col 1 & 2)
+    const legOffset = (col === 1 ? -1 : col === 2 ? 1 : 0);
+    if (py >= 25 && py <= 26) {
+      const legLeft = px >= 11 + legOffset && px <= 14 + legOffset;
+      const legRight = px >= 17 - legOffset && px <= 20 - legOffset;
+      if (legLeft || legRight) {
+        return [...s.hair, 255]; // Boots / trousers color
       }
     }
 
-    return [...palette.outfit, 255];
+    return [...s.outfit, 255];
   });
 
   fs.writeFileSync(path.join(outputDir, `${char}.png`), pngBuffer);
-  console.log(`Generated sprite: ${char}.png`);
+  console.log(`Generated high-detail sprite: ${char}.png`);
 });
 
-const boardDir = path.join(process.cwd(), 'public', 'themes', 'wanderers-path');
-if (!fs.existsSync(boardDir)) {
-  fs.mkdirSync(boardDir, { recursive: true });
-}
-
-const boardBuffer = generatePNG(320, 320, (x, y) => {
-  const tileX = Math.floor(x / 32);
-  const tileY = Math.floor(y / 32);
-  const isEven = (tileX + tileY) % 2 === 0;
-
-  if (x % 32 === 0 || y % 32 === 0) {
-    return [40, 35, 48, 255];
-  }
-
-  if (isEven) {
-    return [35, 33, 41, 255];
-  } else {
-    return [45, 42, 53, 255];
-  }
-});
-fs.writeFileSync(path.join(boardDir, 'board.png'), boardBuffer);
-console.log('Generated board.png successfully');
+console.log('High-detail 2D Chibi Pixel Sprites generated successfully!');

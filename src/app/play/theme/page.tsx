@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { requireAdmin } from "../../admin/_lib/require-admin"; // using safe check or standard auth
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import Link from "next/link";

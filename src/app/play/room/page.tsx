@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import RoomForm from "./_components/RoomForm";
+import { redirect } from "next/navigation";
 
 interface PageProps {
   searchParams: Promise<{ themeId?: string }>;
@@ -18,7 +19,13 @@ async function RoomContent({ searchParams }: { searchParams: Promise<{ themeId?:
 export default async function PlayRoomPage({ searchParams }: PageProps) {
   const session = await auth();
   if (!session?.user?.id) {
-    return null;
+    redirect("/");
+  }
+
+  // Force resolution of searchParams to ensure clean Next.js 15 routing behaviors
+  const resolvedParams = await searchParams;
+  if (!resolvedParams.themeId) {
+    redirect("/play/theme");
   }
 
   return (
@@ -46,11 +53,11 @@ export default async function PlayRoomPage({ searchParams }: PageProps) {
       </header>
 
       {/* Select Room area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-12 flex flex-col items-center justify-center gap-10">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 flex flex-col items-center justify-center gap-6 sm:gap-10">
         <div className="flex flex-col gap-2 text-center">
           <span className="font-press-start text-[10px] text-[#5FA35A] tracking-widest uppercase">Langkah 2</span>
-          <h1 className="text-3xl font-bold font-sans">Buat atau Gabung Room</h1>
-          <p className="text-sm text-[#F2E9D8]/50 font-mono">Tentukan pintu masukmu ke Wanderer&apos;s Path</p>
+          <h1 className="text-2xl sm:text-3xl font-bold font-sans">Buat atau Gabung Room</h1>
+          <p className="text-xs sm:text-sm text-[#F2E9D8]/50 font-mono">Tentukan pintu masukmu ke Wanderer&apos;s Path</p>
         </div>
 
         <Suspense
