@@ -256,4 +256,27 @@ characters.forEach((char) => {
   console.log(`Generated high-detail sprite: ${char}.png`);
 });
 
-console.log('High-detail 2D Chibi Pixel Sprites generated successfully!');
+// Generate Theme 2: Frozen Peaks (Ice Mountain Theme)
+const frozenDir = path.join(process.cwd(), 'public', 'themes', 'frozen-peaks');
+if (!fs.existsSync(frozenDir)) {
+  fs.mkdirSync(frozenDir, { recursive: true });
+}
+
+const frozenBuffer = generatePNG(320, 320, (x, y) => {
+  const tileX = Math.floor(x / 32);
+  const tileY = Math.floor(y / 32);
+  const isEven = (tileX + tileY) % 2 === 0;
+
+  if (x % 32 === 0 || y % 32 === 0) {
+    return [60, 100, 140, 255]; // Ice grid border
+  }
+
+  if (isEven) {
+    return [175, 215, 240, 255]; // Light blue ice
+  } else {
+    return [140, 190, 225, 255]; // Deep frost blue
+  }
+});
+fs.writeFileSync(path.join(frozenDir, 'board.png'), frozenBuffer);
+
+console.log('High-detail 2D Chibi Pixel Sprites & Theme Boards generated successfully!');

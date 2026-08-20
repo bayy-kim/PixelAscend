@@ -82,6 +82,55 @@ export async function joinLobby(roomCode: string) {
   }
 }
 
+export async function kickPlayer(roomCode: string, targetUserId: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    const room = await db.room.findUnique({
+      where: { code: roomCode },
+      include: { players: true },
+    });
+
+    if (!room || room.status !== "LOBBY") {
+      return { error: "Lobby tidak aktif." };
+    }
+
+    if (room.hostUserId !== session.user.id) {
+      return { error: "Hanya Host yang dapat mengeluarkan pemain." };
+    }
+
+    if (targetUserId === session.user.id) {
+      return { error: "Host tidak dapat mengeluarkan diri sendiri." };
+    }
+
+    await db.roomPlayer.deleteMany({
+      where: {
+        roomId: room.id,
+        userId: targetUserId,
+      },
+    });
+
+    // Notify other players
+    try {
+      await pusherServer.trigger(`presence-room-${roomCode}`, "player-left", {
+        userId: targetUserId,
+        kicked: true,
+      });
+    } catch (err) {
+      console.warn("Pusher trigger error:", err);
+    }
+
+    revalidatePath(`/room/${roomCode}`);
+    return { success: true };
+  } catch (err) {
+    console.error("kickPlayer error:", err);
+    return { error: "Gagal mengeluarkan pemain." };
+  }
+}
+
 export async function leaveLobby(roomCode: string) {
   const session = await auth();
   if (!session?.user?.id) {

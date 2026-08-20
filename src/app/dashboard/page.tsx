@@ -2,7 +2,8 @@ import { auth, signOut } from "@/auth";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import ProfileEditor from "./_components/ProfileEditor";
-import { LogOut, Play, Shield, History } from "lucide-react";
+import { LogOut, Play, Shield, History, Award, Zap } from "lucide-react";
+import { PixelSprite } from "@/app/_components/PixelSprite";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -33,6 +34,39 @@ export default async function DashboardPage() {
   const totalGames = finishedGames.length;
   const totalWins = finishedGames.filter((rp: any) => rp.isWinner).length;
   const winRate = totalGames > 0 ? Math.round((totalWins / totalGames) * 100) : 0;
+
+  // Calculate most played hero
+  const heroUsageMap: Record<string, number> = {};
+  user.roomPlayers.forEach((rp: any) => {
+    if (rp.characterId) {
+      heroUsageMap[rp.characterId] = (heroUsageMap[rp.characterId] || 0) + 1;
+    }
+  });
+  const favoriteHeroId = Object.keys(heroUsageMap).sort(
+    (a, b) => heroUsageMap[b] - heroUsageMap[a]
+  )[0] || "dawn";
+
+  // Badges check
+  const badges = [
+    {
+      id: "first-win",
+      title: "First Blood",
+      desc: "Menangkan pertandingan pertamamu",
+      unlocked: totalWins >= 1,
+    },
+    {
+      id: "veteran",
+      title: "Wanderer",
+      desc: "Mainkan 5+ pertandingan",
+      unlocked: totalGames >= 5,
+    },
+    {
+      id: "summit-master",
+      title: "Summit Master",
+      desc: "Mencapai Winrate 50% atau lebih",
+      unlocked: winRate >= 50 && totalGames >= 2,
+    },
+  ];
 
   // Retrieve last 5 matches info
   const lastMatches = user.roomPlayers
@@ -122,7 +156,7 @@ export default async function DashboardPage() {
         {/* Right Side: Stats & Match History (5 cols) */}
         <div className="lg:col-span-5 flex flex-col gap-8">
           
-          {/* Stats Cards */}
+          {/* Stats & Hero Performance Cards */}
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-[#232129] border border-[#4B4A57]/30 rounded-lg p-4 flex flex-col items-center justify-center text-center shadow-md">
               <span className="text-[10px] font-press-start text-[#F2E9D8]/50 mb-2">TOTAL</span>
@@ -138,6 +172,47 @@ export default async function DashboardPage() {
               <span className="text-[10px] font-press-start text-[#E8A33D] mb-2">RATE</span>
               <span className="text-2xl font-press-start font-bold text-[#E8A33D]">{winRate}%</span>
               <span className="text-[9px] font-mono text-[#F2E9D8]/30 mt-1 uppercase">Win Rate</span>
+            </div>
+          </div>
+
+          {/* Hero Favorite & Achievements Section */}
+          <div className="bg-[#232129] border border-[#4B4A57]/30 rounded-lg p-5 flex flex-col gap-4 shadow-md">
+            <div className="flex items-center justify-between border-b border-[#4B4A57]/20 pb-3">
+              <span className="font-press-start text-xs text-[#E8A33D] flex items-center gap-2">
+                <Award className="w-4 h-4 text-[#E8A33D]" /> HERO FAVORIT &amp; BADGES
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between bg-[#1B1A1F] p-3 rounded border border-[#4B4A57]/20">
+              <div className="flex items-center gap-3">
+                <PixelSprite characterId={favoriteHeroId} direction="down" isWalking={true} size={36} />
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold font-sans text-[#F2E9D8] capitalize">{favoriteHeroId}</span>
+                  <span className="text-[9px] font-mono text-[#F2E9D8]/40">Most Played Hero</span>
+                </div>
+              </div>
+              <span className="text-[10px] font-press-start text-[#5FA35A]">
+                {heroUsageMap[favoriteHeroId] || 0}x Played
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] font-press-start text-[#F2E9D8]/50">ACHIEVEMENTS</span>
+              <div className="grid grid-cols-3 gap-2">
+                {badges.map((b) => (
+                  <div
+                    key={b.id}
+                    className={`p-2 rounded border flex flex-col items-center text-center gap-1 ${
+                      b.unlocked
+                        ? "bg-[#5FA35A]/10 border-[#5FA35A]/40 text-[#5FA35A]"
+                        : "bg-[#1B1A1F]/50 border-[#4B4A57]/20 text-[#F2E9D8]/30"
+                    }`}
+                  >
+                    <Zap className="w-4 h-4" />
+                    <span className="text-[9px] font-bold font-sans">{b.title}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 

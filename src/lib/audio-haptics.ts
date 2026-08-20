@@ -17,8 +17,55 @@ class SoundManager {
     }
   }
 
+  private bgmOscs: OscillatorNode[] = [];
+  private bgmGain: GainNode | null = null;
+  private isBgmPlaying: boolean = false;
+
+  public startBGM() {
+    if (this.isMuted || this.isBgmPlaying) return;
+    this.init();
+    if (!this.ctx) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      this.bgmGain = this.ctx.createGain();
+      this.bgmGain.gain.setValueAtTime(0.02, now); // Low subtle volume
+
+      // Chiptune chord C-minor 8-bit ambient loop (C3, Eb3, G3)
+      const freqs = [130.81, 155.56, 196.0];
+      this.bgmOscs = freqs.map((f) => {
+        const osc = this.ctx!.createOscillator();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(f, now);
+        osc.connect(this.bgmGain!);
+        osc.start(now);
+        return osc;
+      });
+
+      this.bgmGain.connect(this.ctx.destination);
+      this.isBgmPlaying = true;
+    } catch {
+      // Audio context autoplay policy catch
+    }
+  }
+
+  public stopBGM() {
+    if (this.bgmOscs.length) {
+      this.bgmOscs.forEach((o) => {
+        try { o.stop(); } catch {}
+      });
+      this.bgmOscs = [];
+    }
+    this.isBgmPlaying = false;
+  }
+
   public toggleMute(): boolean {
     this.isMuted = !this.isMuted;
+    if (this.isMuted) {
+      this.stopBGM();
+    } else {
+      this.startBGM();
+    }
     return this.isMuted;
   }
 

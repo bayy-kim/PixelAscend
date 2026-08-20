@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("Seeding started...");
 
-  // Seed Default Theme
+  // Seed Default Theme & Theme 2
   const defaultTheme = await prisma.theme.upsert({
     where: { id: "wanderers-path" },
     update: {},
@@ -19,6 +19,20 @@ async function main() {
     },
   });
   console.log(`Theme seeded: ${defaultTheme.name}`);
+
+  const frozenTheme = await prisma.theme.upsert({
+    where: { id: "frozen-peaks" },
+    update: {},
+    create: {
+      id: "frozen-peaks",
+      name: "Frozen Peaks",
+      description: "Frosty ice mountain peaks. Glacial slides and crystal scaling ladders.",
+      boardArtUrl: "/themes/frozen-peaks/board.png",
+      isEnabled: true,
+      isDefault: false,
+    },
+  });
+  console.log(`Theme seeded: ${frozenTheme.name}`);
 
   // Seed 8 Characters
   const characters = [

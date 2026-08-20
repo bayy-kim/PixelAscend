@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { pusherClient } from "@/lib/pusher-client";
-import { selectCharacterAndPalette, toggleReady, startGame, leaveLobby } from "../_actions/lobby";
+import { selectCharacterAndPalette, toggleReady, startGame, leaveLobby, kickPlayer } from "../_actions/lobby";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { User, Check, Play, LogOut, Copy, Share2, CheckCheck } from "lucide-react";
+import { User, Check, Play, LogOut, Copy, Share2, CheckCheck, UserX } from "lucide-react";
 import { PixelSprite } from "@/app/_components/PixelSprite";
 
 interface CharacterData {
@@ -326,9 +326,22 @@ export default function LobbyClient({
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {isHost && !isPlayerHost && (
+                    <button
+                      onClick={async () => {
+                        const res = await kickPlayer(roomCode, player.userId);
+                        if (res?.error) setError(res.error);
+                      }}
+                      className="p-1 text-[#C24A4A]/60 hover:text-[#C24A4A] transition-colors cursor-pointer"
+                      title="Kick Player"
+                    >
+                      <UserX className="w-4 h-4" />
+                    </button>
+                  )}
+
                   {player.isReady || isPlayerHost ? (
                     <span className="flex items-center gap-1 text-[10px] text-[#5FA35A] font-bold bg-[#5FA35A]/10 px-2 py-0.5 rounded border border-[#5FA35A]/20">
-                      <Check className="w-3. h-3" />
+                      <Check className="w-3 h-3" />
                       READY
                     </span>
                   ) : (
