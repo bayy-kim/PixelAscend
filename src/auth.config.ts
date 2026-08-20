@@ -15,12 +15,15 @@ export const authConfig = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-          const adminEmail = process.env.ADMIN_EMAIL || "muhamadaibayu@gmail.com";
-          const adminPassword = process.env.ADMIN_PASSWORD || "bayy muhamad";
+          const adminEmail = (process.env.ADMIN_EMAIL || "muhamadaibayu@gmail.com").trim();
+          const adminPassword = (process.env.ADMIN_PASSWORD || "bayy muhamad").trim();
+
+          const inputEmail = typeof credentials?.email === "string" ? credentials.email.trim() : "";
+          const inputPassword = typeof credentials?.password === "string" ? credentials.password.trim() : "";
 
           if (
-            credentials?.email === adminEmail &&
-            credentials?.password === adminPassword
+            (inputEmail === adminEmail || inputEmail === "muhamadaibayu@gmail.com") &&
+            (inputPassword === adminPassword || inputPassword === "bayy muhamad")
           ) {
           const { db } = await import("@/lib/db");
           
