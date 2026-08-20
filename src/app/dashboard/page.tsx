@@ -137,7 +137,7 @@ export default async function DashboardPage() {
             </div>
             
             <Link
-              href="/play/theme"
+              href="/play/room"
               className="flex items-center justify-center gap-3 px-8 h-14 bg-[#E8A33D] hover:bg-[#F2B75C] active:translate-y-[1px] text-[#1B1A1F] font-press-start text-xs tracking-wider rounded-md border-b-4 border-[#4B4A57] transition-all shadow-lg min-w-[180px]"
             >
               <Play className="w-4 h-4 fill-current" />
@@ -150,6 +150,7 @@ export default async function DashboardPage() {
             initialNickname={user.nickname}
             initialName={user.name}
             initialAvatar={user.avatarUrl || user.image}
+            initialFavoriteCharacterId={user.favoriteCharacterId}
           />
         </div>
 

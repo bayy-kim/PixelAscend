@@ -8,22 +8,23 @@ generator client {
 }
 
 model User {
-  id            String          @id @default(cuid())
-  email         String          @unique
-  name          String
-  emailVerified DateTime?       // required for NextAuth v5 prisma adapter
-  nickname      String?         // custom nickname, separate from Google name
-  image         String?         // fallback image from Google
-  avatarUrl     String?         // custom uploaded avatar (Vercel Blob), overrides image if exists
-  role          Role            @default(PLAYER)
-  status        UserStatus      @default(ACTIVE)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id                  String          @id @default(cuid())
+  email               String          @unique
+  name                String
+  emailVerified       DateTime?       // required for NextAuth v5 prisma adapter
+  nickname            String?         // custom nickname, separate from Google name
+  avatarUrl           String?         // custom uploaded avatar (Vercel Blob), overrides image if exists
+  favoriteCharacterId String          @default("dawn") // Main Hero choice for auto-selection in lobbies
+  image               String?         // fallback image from Google
+  role                Role            @default(PLAYER)
+  status              UserStatus      @default(ACTIVE)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  roomPlayers   RoomPlayer[]
-  adminActions  AdminAuditLog[] @relation("ActorAdminActions")
+  accounts            Account[]
+  sessions            Session[]
+  roomPlayers         RoomPlayer[]
+  adminActions        AdminAuditLog[] @relation("ActorAdminActions")
 }
 
 enum Role {

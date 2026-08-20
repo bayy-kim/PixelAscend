@@ -22,11 +22,8 @@ export default async function PlayRoomPage({ searchParams }: PageProps) {
     redirect("/");
   }
 
-  // Force resolution of searchParams to ensure clean Next.js 15 routing behaviors
   const resolvedParams = await searchParams;
-  if (!resolvedParams.themeId) {
-    redirect("/play/theme");
-  }
+  const themeId = resolvedParams.themeId || "wanderers-path"; // Default to Wanderers Path if no theme param specified
 
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-[#1B1A1F] text-[#F2E9D8]">
@@ -43,11 +40,11 @@ export default async function PlayRoomPage({ searchParams }: PageProps) {
           </div>
 
           <Link
-            href="/play/theme"
+            href="/dashboard"
             className="flex items-center gap-2 text-xs font-mono text-[#F2E9D8]/50 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Pilih Tema
+            Dashboard
           </Link>
         </div>
       </header>
@@ -55,20 +52,12 @@ export default async function PlayRoomPage({ searchParams }: PageProps) {
       {/* Select Room area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 flex flex-col items-center justify-center gap-6 sm:gap-10">
         <div className="flex flex-col gap-2 text-center">
-          <span className="font-press-start text-[10px] text-[#5FA35A] tracking-widest uppercase">Langkah 2</span>
+          <span className="font-press-start text-[10px] text-[#E8A33D] tracking-widest uppercase">Langkah 1</span>
           <h1 className="text-2xl sm:text-3xl font-bold font-sans">Buat atau Gabung Room</h1>
-          <p className="text-xs sm:text-sm text-[#F2E9D8]/50 font-mono">Tentukan pintu masukmu ke Wanderer&apos;s Path</p>
+          <p className="text-xs sm:text-sm text-[#F2E9D8]/50 font-mono">Gabung dengan kode atau buat arena bertarungmu sendiri</p>
         </div>
 
-        <Suspense
-          fallback={
-            <div className="font-press-start text-xs text-[#F2E9D8]/30 animate-pulse py-12">
-              Loading form...
-            </div>
-          }
-        >
-          <RoomContent searchParams={searchParams} />
-        </Suspense>
+        <RoomForm themeId={themeId} />
       </main>
     </div>
   );

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { redirect } from "next/navigation";
 
 // Theme list component (wrapped in Suspense because of Next.js 15 search params handling / client state boundaries)
 async function ThemeList() {
@@ -53,13 +54,24 @@ async function ThemeList() {
             </div>
           </div>
 
-          <Link
-            href={`/play/room?themeId=${theme.id}`}
-            className="w-full h-12 flex items-center justify-center gap-2 bg-[#E8A33D] hover:bg-[#F2B75C] active:translate-y-[1px] text-[#1B1A1F] font-press-start text-xs rounded transition-all cursor-pointer shadow-md"
+          <form
+            action={async () => {
+              "use server";
+              const { createRoom } = await import("@/app/play/room/_actions/room");
+              const res = await createRoom(theme.id);
+              if (res?.code) {
+                redirect(`/room/${res.code}`);
+              }
+            }}
           >
-            PILIH TEMA
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+            <button
+              type="submit"
+              className="w-full h-12 flex items-center justify-center gap-2 bg-[#E8A33D] hover:bg-[#F2B75C] active:translate-y-[1px] text-[#1B1A1F] font-press-start text-xs rounded transition-all cursor-pointer shadow-md"
+            >
+              BUAT ROOM DENGAN TEMA INI
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </form>
         </div>
       ))}
     </div>
@@ -99,9 +111,9 @@ export default async function SelectThemePage() {
       {/* Select Theme area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-12 flex flex-col items-center justify-center gap-10">
         <div className="flex flex-col gap-2 text-center">
-          <span className="font-press-start text-[10px] text-[#E8A33D] tracking-widest uppercase">Langkah 1</span>
-          <h1 className="text-3xl font-bold font-sans">Pilih Tema Papan</h1>
-          <p className="text-sm text-[#F2E9D8]/50 font-mono">MVP: Pilih Wanderer&apos;s Path untuk memulai permainan</p>
+          <span className="font-press-start text-[10px] text-[#E8A33D] tracking-widest uppercase">Langkah 2 (Khusus Host)</span>
+          <h1 className="text-3xl font-bold font-sans">Pilih Tema Papan Arena</h1>
+          <p className="text-sm text-[#F2E9D8]/50 font-mono">Pilih suasana arena untuk room baru yang akan kamu buat</p>
         </div>
 
         <Suspense

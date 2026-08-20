@@ -45,11 +45,26 @@ export async function createRoom(themeId: string) {
   }
 
   try {
-    const firstChar = await db.character.findFirst({
-      where: { isEnabled: true },
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { favoriteCharacterId: true },
     });
-    if (!firstChar) {
-      return { error: "Tidak ada karakter aktif di katalog." };
+
+    let selectedCharId = user?.favoriteCharacterId || "dawn";
+
+    // Verify chosen favorite character is enabled
+    const validChar = await db.character.findUnique({
+      where: { id: selectedCharId, isEnabled: true },
+    });
+
+    if (!validChar) {
+      const fallbackChar = await db.character.findFirst({
+        where: { isEnabled: true },
+      });
+      if (!fallbackChar) {
+        return { error: "Tidak ada karakter aktif di katalog." };
+      }
+      selectedCharId = fallbackChar.id;
     }
 
     const room = await db.room.create({
@@ -61,7 +76,7 @@ export async function createRoom(themeId: string) {
         players: {
           create: {
             userId: session.user.id,
-            characterId: firstChar.id,
+            characterId: selectedCharId,
             turnOrder: 0,
             position: 0,
             isReady: true, // Host is ready by default
@@ -104,6 +119,46 @@ export async function joinRoomByCode(code: string) {
 
     if (room.players.length >= 8) {
       return { error: "Room sudah penuh (maksimal 8 pemain)." };
+    }
+
+    // Check if player is already in room
+    const existingPlayer = room.players.find((p: any) => p.userId === session.user.id);
+    if (!existingPlayer) {
+      // Pick favorite character if available, else pick first untaken character
+      const user = await db.user.findUnique({
+        where: { id: session.user.id },
+        select: { favoriteCharacterId: true },
+      });
+
+      const takenCharIds = room.players.map((p: any) => p.characterId);
+      let selectedCharId = user?.favoriteCharacterId || "dawn";
+
+      if (takenCharIds.includes(selectedCharId)) {
+        // Favorite is taken, pick first untaken character
+        const availableChar = await db.character.findFirst({
+          where: {
+            isEnabled: true,
+            id: { notIn: takenCharIds },
+          },
+        });
+        if (!availableChar) {
+          return { error: "Semua karakter di room ini sudah dipilih." };
+        }
+        selectedCharId = availableChar.id;
+      }
+
+      // Pre-register RoomPlayer in DB so join doesn't bounce
+      await db.roomPlayer.create({
+        data: {
+          roomId: room.id,
+          userId: session.user.id,
+          characterId: selectedCharId,
+          turnOrder: room.players.length,
+          position: 0,
+          isReady: false,
+          heldCards: [],
+        },
+      });
     }
 
     return { success: true, code: room.code };

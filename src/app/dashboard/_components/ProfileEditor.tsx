@@ -1,29 +1,60 @@
 "use client";
 
 import { useState, useRef, useTransition } from "react";
-import { updateNickname, uploadAvatar } from "../_actions/profile";
+import { updateNickname, uploadAvatar, updateFavoriteCharacter } from "../_actions/profile";
 import Image from "next/image";
+import { PixelSprite } from "@/app/_components/PixelSprite";
+import { Sparkles, Check } from "lucide-react";
 
 interface ProfileEditorProps {
   initialNickname: string | null;
   initialName: string;
   initialAvatar: string | null;
+  initialFavoriteCharacterId?: string;
 }
+
+const HEROES = [
+  { id: "dawn", name: "Dawn" },
+  { id: "wren", name: "Wren" },
+  { id: "thistle", name: "Thistle" },
+  { id: "brack", name: "Brack" },
+  { id: "ember", name: "Ember" },
+  { id: "marrow", name: "Marrow" },
+  { id: "sable", name: "Sable" },
+  { id: "halcyon", name: "Halcyon" },
+];
 
 export default function ProfileEditor({
   initialNickname,
   initialName,
   initialAvatar,
+  initialFavoriteCharacterId = "dawn",
 }: ProfileEditorProps) {
   const [nickname, setNickname] = useState(initialNickname || initialName);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initialAvatar);
+  const [favoriteChar, setFavoriteChar] = useState<string>(initialFavoriteCharacterId);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   
   const [isPendingNickname, startNicknameTransition] = useTransition();
   const [isPendingAvatar, startAvatarTransition] = useTransition();
+  const [isPendingHero, startHeroTransition] = useTransition();
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFavoriteHeroChange = (charId: string) => {
+    setError(null);
+    setSuccess(null);
+    startHeroTransition(async () => {
+      const res = await updateFavoriteCharacter(charId);
+      if (res?.error) {
+        setError(res.error);
+      } else {
+        setFavoriteChar(charId);
+        setSuccess(`Hero Utama berhasil diubah ke ${charId.toUpperCase()}!`);
+      }
+    });
+  };
 
   const handleNicknameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -199,7 +230,7 @@ export default function ProfileEditor({
             />
             <button
               type="submit"
-              className="bg-[#E8A33D] hover:bg-[#F2B75C] active:translate-y-[1px] text-[#1B1A1F] font-press-start text-xs px-6 rounded transition-all cursor-pointer shadow-md disabled:opacity-50"
+              className="bg-[#E8A33D] hover:bg-[#F2B75C] active:translate-y-[1px] text-[#1B1A1F] font-press-start text-xs px-6 rounded transition-all cursor-pointer shadow-md disabled:opacity-50 min-h-[44px]"
               disabled={isPendingNickname}
             >
               {isPendingNickname ? "SAVING..." : "SAVE"}
@@ -207,6 +238,45 @@ export default function ProfileEditor({
           </div>
         </div>
       </form>
+
+      {/* Main Hero / Favorite Character Selector */}
+      <div className="flex flex-col gap-3 pt-4 border-t border-[#4B4A57]/20">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-press-start text-[#E8A33D] flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5" /> HERO UTAMA (AUTO PRE-SELECT)
+          </label>
+          <span className="text-[10px] font-mono text-[#F2E9D8]/40">Dipilih otomatis di Lobby</span>
+        </div>
+
+        <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+          {HEROES.map((h) => {
+            const isSelected = favoriteChar === h.id;
+            return (
+              <button
+                key={h.id}
+                type="button"
+                onClick={() => handleFavoriteHeroChange(h.id)}
+                disabled={isPendingHero}
+                className={`p-2 bg-[#1B1A1F] border rounded flex flex-col items-center gap-1 transition-all cursor-pointer relative ${
+                  isSelected
+                    ? "border-[#E8A33D] bg-[#E8A33D]/10"
+                    : "border-[#4B4A57]/30 hover:border-[#4B4A57]"
+                }`}
+              >
+                <PixelSprite characterId={h.id} direction="down" isWalking={isSelected} size={32} />
+                <span className={`text-[9px] font-mono capitalize truncate max-w-full ${isSelected ? "text-[#E8A33D] font-bold" : "text-[#F2E9D8]/60"}`}>
+                  {h.name}
+                </span>
+                {isSelected && (
+                  <div className="absolute top-0.5 right-0.5 bg-[#E8A33D] text-[#1B1A1F] rounded-full p-0.5">
+                    <Check className="w-2.5 h-2.5" />
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Status Messages */}
       {error && (

@@ -8,6 +8,32 @@ import { revalidatePath } from "next/cache";
 const MAX_FILE_SIZE = 2 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
+export async function updateFavoriteCharacter(characterId: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  const validChar = await db.character.findUnique({
+    where: { id: characterId, isEnabled: true },
+  });
+  if (!validChar) {
+    return { error: "Karakter tidak valid atau dinonaktifkan." };
+  }
+
+  try {
+    await db.user.update({
+      where: { id: session.user.id },
+      data: { favoriteCharacterId: characterId },
+    });
+    revalidatePath("/dashboard");
+    return { success: true, favoriteCharacterId: characterId };
+  } catch (err) {
+    console.error(err);
+    return { error: "Gagal menyimpan Hero Utama." };
+  }
+}
+
 export async function updateNickname(nickname: string) {
   const session = await auth();
   if (!session?.user?.id) {

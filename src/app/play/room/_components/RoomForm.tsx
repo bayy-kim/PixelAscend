@@ -18,20 +18,8 @@ export default function RoomForm({ themeId }: RoomFormProps) {
   const [isPendingJoin, startJoinTransition] = useTransition();
 
   const handleCreate = () => {
-    if (!themeId) {
-      setError("Silakan pilih tema terlebih dahulu.");
-      return;
-    }
     setError(null);
-
-    startCreateTransition(async () => {
-      const res = await createRoom(themeId);
-      if (res?.error) {
-        setError(res.error);
-      } else if (res?.code) {
-        router.push(`/room/${res.code}`);
-      }
-    });
+    router.push("/play/theme");
   };
 
   const handleJoin = (e: React.FormEvent) => {
@@ -62,20 +50,10 @@ export default function RoomForm({ themeId }: RoomFormProps) {
         </p>
         <button
           onClick={handleCreate}
-          disabled={isPendingCreate || !themeId}
-          className="w-full h-12 flex items-center justify-center gap-2 bg-[#E8A33D] hover:bg-[#F2B75C] active:translate-y-[1px] text-[#1B1A1F] font-press-start text-xs rounded transition-all cursor-pointer shadow-md disabled:opacity-50 min-h-[48px]"
+          className="w-full h-12 flex items-center justify-center gap-2 bg-[#E8A33D] hover:bg-[#F2B75C] active:translate-y-[1px] text-[#1B1A1F] font-press-start text-xs rounded transition-all cursor-pointer shadow-md min-h-[48px]"
         >
-          {isPendingCreate ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin text-[#1B1A1F]" />
-              <span>MEMBUAT ROOM...</span>
-            </>
-          ) : (
-            <>
-              <Plus className="w-4 h-4" />
-              <span>BUAT ROOM</span>
-            </>
-          )}
+          <Plus className="w-4 h-4" />
+          <span>BUAT ROOM BARU</span>
         </button>
       </div>
 
