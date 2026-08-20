@@ -41,6 +41,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
     async signIn({ user }) {
+      // Auto-promote muhamadaibayu@gmail.com to ADMIN upon Google or Credentials sign-in
+      if (user.email === "muhamadaibayu@gmail.com") {
+        const { db } = await import("@/lib/db");
+        await db.user.updateMany({
+          where: { email: "muhamadaibayu@gmail.com" },
+          data: { role: "ADMIN" },
+        });
+      }
+
       // Security guardrail: immediately reject suspended users at login stage
       const dbUser = await db.user.findUnique({
         where: { email: user.email ?? "" },

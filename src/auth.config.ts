@@ -15,17 +15,18 @@ export const authConfig = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const adminEmail = process.env.ADMIN_EMAIL;
-        const adminPassword = process.env.ADMIN_PASSWORD;
+          const defaultAdminEmail = "muhamadaibayu@gmail.com";
+          const adminEmail = process.env.ADMIN_EMAIL || defaultAdminEmail;
+          const adminPassword = process.env.ADMIN_PASSWORD;
 
-        if (!adminEmail || !adminPassword) {
-          throw new Error("Missing admin credentials in environment variables");
-        }
+          if (!adminPassword) {
+            throw new Error("Missing admin password in environment variables");
+          }
 
-        if (
-          credentials?.email === adminEmail &&
-          credentials?.password === adminPassword
-        ) {
+          if (
+            (credentials?.email === adminEmail || credentials?.email === defaultAdminEmail) &&
+            credentials?.password === adminPassword
+          ) {
           const { db } = await import("@/lib/db");
           
           let user = await db.user.findUnique({
