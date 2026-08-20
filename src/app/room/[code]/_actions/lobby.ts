@@ -63,12 +63,16 @@ export async function joinLobby(roomCode: string) {
       },
     });
 
-    // Trigger Pusher event to notify others
-    await pusherServer.trigger(`presence-room-${roomCode}`, "player-joined", {
-      userId: session.user.id,
-      name: session.user.name,
-      nickname: session.user.nickname,
-    });
+    // Trigger Pusher event to notify others (safely catch any pusher broadcast error)
+    try {
+      await pusherServer.trigger(`presence-room-${roomCode}`, "player-joined", {
+        userId: session.user.id,
+        name: session.user.name,
+        nickname: session.user.nickname,
+      });
+    } catch (pusherErr) {
+      console.warn("Pusher trigger warning:", pusherErr);
+    }
 
     revalidatePath(`/room/${roomCode}`);
     return { success: true };
@@ -159,12 +163,16 @@ export async function selectCharacterAndPalette(
       },
     });
 
-    // Notify other players
-    await pusherServer.trigger(`presence-room-${roomCode}`, "player-picked-character", {
-      userId: session.user.id,
-      characterId,
-      cosmeticVariant,
-    });
+    // Notify other players (safely catch any pusher broadcast error)
+    try {
+      await pusherServer.trigger(`presence-room-${roomCode}`, "player-picked-character", {
+        userId: session.user.id,
+        characterId,
+        cosmeticVariant,
+      });
+    } catch (pusherErr) {
+      console.warn("Pusher trigger warning:", pusherErr);
+    }
 
     revalidatePath(`/room/${roomCode}`);
     return { success: true };
@@ -199,10 +207,14 @@ export async function toggleReady(roomCode: string, isReady: boolean) {
     });
 
     // Notify other players
-    await pusherServer.trigger(`presence-room-${roomCode}`, "player-ready", {
-      userId: session.user.id,
-      isReady,
-    });
+    try {
+      await pusherServer.trigger(`presence-room-${roomCode}`, "player-ready", {
+        userId: session.user.id,
+        isReady,
+      });
+    } catch (pusherErr) {
+      console.warn("Pusher trigger warning:", pusherErr);
+    }
 
     revalidatePath(`/room/${roomCode}`);
     return { success: true };
@@ -274,7 +286,11 @@ export async function startGame(roomCode: string) {
     });
 
     // Notify other players game has started
-    await pusherServer.trigger(`presence-room-${roomCode}`, "game-started", {});
+    try {
+      await pusherServer.trigger(`presence-room-${roomCode}`, "game-started", {});
+    } catch (pusherErr) {
+      console.warn("Pusher trigger warning:", pusherErr);
+    }
 
     revalidatePath(`/room/${roomCode}`);
     return { success: true };
