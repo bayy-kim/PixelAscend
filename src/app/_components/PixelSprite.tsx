@@ -35,40 +35,18 @@ export const PixelSprite: React.FC<PixelSpriteProps> = ({
   size = 48,
   className = "",
 }) => {
-  const [frameIndex, setFrameIndex] = useState(0);
-
-  useEffect(() => {
-    if (!isWalking) {
-      setFrameIndex(0);
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setFrameIndex((prev) => (prev + 1) % 3);
-    }, 150); // 150ms per walk frame step
-
-    return () => clearInterval(interval);
-  }, [isWalking]);
-
-  const row = DIRECTION_ROW_MAP[direction];
-  const spriteUrl = `/sprites/${characterId}.png`;
-
-  // Scale calculations: Each cell is 32x32px in a 96x128px sheet (3 cols x 4 rows)
-  const backgroundPositionX = -frameIndex * size;
-  const backgroundPositionY = -row * size;
-  const backgroundSize = `${size * 3}px ${size * 4}px`;
-
+  const spriteUrl = `/sprites/${characterId.toLowerCase()}.png`;
   const filterStyle = PALETTE_FILTERS[variant.toLowerCase()] || "none";
 
   return (
     <div
-      className={`pixelated inline-block relative ${className}`}
+      className={`pixelated inline-block relative transition-transform ${isWalking ? "animate-bounce" : ""} ${className}`}
       style={{
         width: `${size}px`,
         height: `${size}px`,
         backgroundImage: `url('${spriteUrl}')`,
-        backgroundPosition: `${backgroundPositionX}px ${backgroundPositionY}px`,
-        backgroundSize: backgroundSize,
+        backgroundPosition: "center",
+        backgroundSize: "contain",
         backgroundRepeat: "no-repeat",
         imageRendering: "pixelated",
         filter: filterStyle,

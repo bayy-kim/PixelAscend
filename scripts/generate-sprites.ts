@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-// High-Detail 2D Pixel Chibi Generator (32x32 per frame, 96x128 total per sheet)
+// High-Detail Single-Pose 2D Pixel Chibi Generator (256x256 per character PNG)
 function generatePNG(width: number, height: number, drawPixel: (x: number, y: number) => [number, number, number, number]): Buffer {
   const bytesPerPixel = 4;
   const lineSize = 1 + width * bytesPerPixel;
@@ -96,187 +96,200 @@ function generatePNG(width: number, height: number, drawPixel: (x: number, y: nu
   return Buffer.concat([pngSignature, ihdrChunk, idatChunk, iendChunk]);
 }
 
-interface CharStyle {
+interface CharRenderSpec {
   skin: [number, number, number];
   hair: [number, number, number];
   outfit: [number, number, number];
   accent: [number, number, number];
   eye: [number, number, number];
-  type: "human" | "elf" | "dwarf" | "orc" | "dragon" | "skeleton" | "hooded" | "centaur";
+  type: "dawn" | "wren" | "thistle" | "brack" | "ember" | "marrow" | "sable" | "halcyon";
 }
 
-const CHAR_STYLES: Record<string, CharStyle> = {
-  dawn: { skin: [235, 190, 150], hair: [115, 65, 30], outfit: [70, 110, 180], accent: [230, 190, 60], eye: [25, 25, 30], type: "human" },
-  wren: { skin: [240, 215, 190], hair: [210, 205, 230], outfit: [120, 60, 170], accent: [170, 130, 230], eye: [80, 170, 150], type: "elf" },
-  thistle: { skin: [215, 170, 130], hair: [180, 180, 190], outfit: [130, 85, 45], accent: [180, 110, 40], eye: [30, 30, 35], type: "dwarf" },
-  brack: { skin: [95, 165, 75], hair: [40, 55, 35], outfit: [90, 65, 45], accent: [190, 180, 140], eye: [220, 50, 40], type: "orc" },
-  ember: { skin: [210, 60, 45], hair: [160, 40, 30], outfit: [140, 45, 35], accent: [245, 175, 45], eye: [250, 210, 50], type: "dragon" },
-  marrow: { skin: [230, 230, 220], hair: [60, 55, 50], outfit: [85, 75, 65], accent: [160, 160, 150], eye: [15, 15, 20], type: "skeleton" },
-  sable: { skin: [220, 185, 150], hair: [30, 25, 35], outfit: [25, 22, 30], accent: [160, 80, 220], eye: [190, 120, 250], type: "hooded" },
-  halcyon: { skin: [220, 175, 135], hair: [95, 60, 35], outfit: [115, 80, 45], accent: [55, 120, 80], eye: [40, 35, 30], type: "centaur" }
+const SPECS: Record<string, CharRenderSpec> = {
+  dawn: { skin: [235, 190, 150], hair: [115, 65, 30], outfit: [70, 110, 180], accent: [230, 190, 60], eye: [25, 25, 30], type: "dawn" },
+  wren: { skin: [240, 215, 190], hair: [210, 205, 230], outfit: [120, 60, 170], accent: [170, 130, 230], eye: [80, 170, 150], type: "wren" },
+  thistle: { skin: [215, 170, 130], hair: [180, 180, 190], outfit: [130, 85, 45], accent: [180, 110, 40], eye: [30, 30, 35], type: "thistle" },
+  brack: { skin: [95, 165, 75], hair: [40, 55, 35], outfit: [90, 65, 45], accent: [190, 180, 140], eye: [220, 50, 40], type: "brack" },
+  ember: { skin: [210, 60, 45], hair: [160, 40, 30], outfit: [140, 45, 35], accent: [245, 175, 45], eye: [250, 210, 50], type: "ember" },
+  marrow: { skin: [230, 230, 220], hair: [60, 55, 50], outfit: [85, 75, 65], accent: [160, 160, 150], eye: [15, 15, 20], type: "marrow" },
+  sable: { skin: [220, 185, 150], hair: [30, 25, 35], outfit: [25, 22, 30], accent: [160, 80, 220], eye: [190, 120, 250], type: "sable" },
+  halcyon: { skin: [220, 175, 135], hair: [95, 60, 35], outfit: [115, 80, 45], accent: [55, 120, 80], eye: [40, 35, 30], type: "halcyon" }
 };
-
-const characters = ['dawn', 'wren', 'thistle', 'brack', 'ember', 'marrow', 'sable', 'halcyon'];
 
 const outputDir = path.join(process.cwd(), 'public', 'sprites');
 if (!fs.existsSync(outputDir)) {
   fs.mkdirSync(outputDir, { recursive: true });
 }
 
-characters.forEach((char) => {
-  const s = CHAR_STYLES[char];
-
-  const pngBuffer = generatePNG(96, 128, (x, y) => {
-    const col = Math.floor(x / 32); // 0, 1, 2
-    const row = Math.floor(y / 32); // 0: Down, 1: Left, 2: Right, 3: Up
-    const px = x % 32;
-    const py = y % 32;
+// Render high-res 256x256 single-pose pixel character with distinct archetype features
+Object.keys(SPECS).forEach((charKey) => {
+  const spec = SPECS[charKey];
+  
+  // 256x256 image with 8x8 pixel blocks (32x32 pixel art grid scaled up crisp 8x)
+  const pngBuffer = generatePNG(256, 256, (x, y) => {
+    const gx = Math.floor(x / 8); // 0..31
+    const gy = Math.floor(y / 8); // 0..31
 
     const OUTLINE: [number, number, number, number] = [20, 18, 26, 255];
-    const SHADOW: [number, number, number, number] = [0, 0, 0, 80];
+    const SHADOW: [number, number, number, number] = [0, 0, 0, 90];
+    const CAPE_COLOR: [number, number, number, number] = [40, 70, 140, 255];
+    const SHIELD_GOLD: [number, number, number, number] = [230, 180, 40, 255];
 
-    // Feet shadow ellipse (py = 28..30, px = 10..21)
-    if (py >= 28 && py <= 30 && px >= 10 && px <= 21 && s.type !== "centaur") {
-      if ((py === 29 && px >= 11 && px <= 20) || (py === 28 && px >= 13 && px <= 18)) {
+    // Feet Ambient Drop Shadow
+    if (gy >= 27 && gy <= 29 && gx >= 8 && gx <= 23 && spec.type !== "halcyon") {
+      if ((gy === 28 && gx >= 9 && gx <= 22) || (gy === 27 && gx >= 11 && gx <= 20)) {
         return SHADOW;
       }
     }
 
-    // Centaur Horse lower body (py 18..28)
-    if (s.type === "centaur" && py >= 18 && py <= 28) {
-      if (px >= 6 && px <= 25 && py <= 27) {
-        if (px === 6 || px === 25 || py === 18 || py === 27) return OUTLINE;
-        // Horse body color
-        return [130, 85, 45, 255];
+    // --- DAWN (Human Knight: Plate armor, blue cape, sun shield) ---
+    if (spec.type === "dawn") {
+      // Sun Shield on left arm (gx 4..8, gy 15..23)
+      if (gx >= 4 && gx <= 8 && gy >= 15 && gy <= 23) {
+        if (gx === 4 || gx === 8 || gy === 15 || gy === 23) return OUTLINE;
+        if (gx === 6 && gy === 19) return [255, 230, 100, 255]; // Sun emblem center
+        return SHIELD_GOLD;
+      }
+      // Blue Cape on shoulders (gx 9..22, gy 16..25)
+      if (gx >= 8 && gx <= 23 && gy >= 16 && gy <= 25) {
+        if (gx === 8 || gx === 23) return OUTLINE;
+        if (gx <= 10 || gx >= 21) return CAPE_COLOR;
       }
     }
 
-    // Skeleton custom skull
-    if (s.type === "skeleton") {
-      const isSkull = (px >= 10 && px <= 21 && py >= 5 && py <= 15);
-      if (isSkull) {
-        if (px === 10 || px === 21 || py === 5 || py === 15) return OUTLINE;
-        // Eye sockets
-        if ((py === 9 || py === 10) && (px === 13 || px === 14 || px === 17 || px === 18)) {
-          return [20, 20, 25, 255];
+    // --- WREN (Elf Mystic: Long silver hair, purple rune robe, staff) ---
+    if (spec.type === "wren") {
+      // Magic Staff on right hand (gx 23..25, gy 6..27)
+      if (gx >= 23 && gx <= 25 && gy >= 6 && gy <= 27) {
+        if (gy <= 9 && gx === 24) return [190, 150, 255, 255]; // Glowing crystal top
+        if (gx === 24) return [110, 70, 40, 255];
+      }
+      // Long hair flowing down sides (gx 7..10 & 21..24, gy 8..20)
+      if ((gx >= 7 && gx <= 9 || gx >= 22 && gx <= 24) && gy >= 8 && gy <= 20) {
+        return [...spec.hair, 255];
+      }
+    }
+
+    // --- THISTLE (Dwarf Guardian: Braided grey beard, tower shield, heavy iron plate) ---
+    if (spec.type === "thistle") {
+      // Wide Braided Beard (gx 9..22, gy 13..21)
+      if (gx >= 9 && gx <= 22 && gy >= 13 && gy <= 21) {
+        if (gx === 9 || gx === 22 || gy === 21) return OUTLINE;
+        return [200, 200, 210, 255];
+      }
+    }
+
+    // --- BRACK (Orc Fighter: Green skin, sleeveless leather fur, tusks, shoulder club) ---
+    if (spec.type === "brack") {
+      // Large Stone Club on shoulder (gx 21..26, gy 5..16)
+      if (gx >= 21 && gx <= 26 && gy >= 5 && gy <= 16) {
+        if (gy <= 9) return [100, 95, 90, 255]; // Stone head
+        return [120, 80, 40, 255]; // Handle
+      }
+    }
+
+    // --- EMBER (Dragonkin: Red scales, horns, dragon tail) ---
+    if (spec.type === "ember") {
+      // Curved Dragon Horns (gx 7..10 & 21..24, gy 3..7)
+      if ((gx >= 7 && gx <= 10 && gy >= 3 && gy <= 7) || (gx >= 21 && gx <= 24 && gy >= 3 && gy <= 7)) {
+        if (gy === 3 || gx === 7 || gx === 24) return OUTLINE;
+        return [...spec.accent, 255];
+      }
+      // Dragon Tail (gx 4..8, gy 22..27)
+      if (gx >= 3 && gx <= 7 && gy >= 22 && gy <= 27) {
+        return [...spec.skin, 255];
+      }
+    }
+
+    // --- MARROW (Skeleton: Bone skull, lit belt lantern, tattered cloak) ---
+    if (spec.type === "marrow") {
+      // Lit Lantern hanging from waist (gx 6..9, gy 20..25)
+      if (gx >= 6 && gx <= 9 && gy >= 20 && gy <= 25) {
+        if (gy >= 22 && gy <= 24 && gx >= 7 && gx <= 8) return [255, 220, 90, 255]; // Lit yellow glow
+        return [60, 50, 45, 255];
+      }
+      // Hollow Skull Head (gx 9..22, gy 4..15)
+      if (gx >= 9 && gx <= 22 && gy >= 4 && gy <= 15) {
+        if (gx === 9 || gx === 22 || gy === 4 || gy === 15) return OUTLINE;
+        if ((gy === 9 || gy === 10) && ((gx >= 12 && gx <= 14) || (gx >= 17 && gx <= 19))) {
+          return [15, 15, 20, 255]; // Eye sockets
         }
-        // Nose gap
-        if (py === 12 && (px === 15 || px === 16)) return [20, 20, 25, 255];
-        return [230, 230, 220, 255];
+        if (gy === 12 && (gx === 15 || gx === 16)) return [15, 15, 20, 255]; // Nose hole
+        if (gy === 14 && gx >= 13 && gx <= 18 && gx % 2 === 1) return [15, 15, 20, 255]; // Teeth
+        return [235, 235, 225, 255];
       }
-      // Ribs & Bones
-      if (py >= 16 && py <= 27 && px >= 11 && px <= 20) {
-        if (px === 11 || px === 20 || py === 16 || py === 27) return OUTLINE;
-        if (py % 2 === 0) return [200, 200, 190, 255];
-        return [40, 38, 42, 255];
-      }
-      return [0, 0, 0, 0];
     }
 
-    // Head definition (px: 9..22, py: 4..16)
-    const isHead = (px >= 9 && px <= 22 && py >= 4 && py <= 16);
-    // Body definition (px: 10..21, py: 17..27)
-    const isBody = (px >= 10 && px <= 21 && py >= 17 && py <= 27);
+    // --- SABLE (Cloaked Shadow: Deep black hood, glowing purple eye sliver) ---
+    if (spec.type === "sable") {
+      if (gy >= 4 && gy <= 27 && gx >= 8 && gx <= 23) {
+        if (gx === 8 || gx === 23 || gy === 4 || gy === 27) return OUTLINE;
+        // Face sliver deep inside hood
+        if (gy >= 10 && gy <= 13 && gx >= 12 && gx <= 19) {
+          if (gy === 11 && (gx === 14 || gx === 17)) return [...spec.eye, 255]; // Purple eye glow
+          return [35, 30, 40, 255];
+        }
+        return [...spec.outfit, 255];
+      }
+    }
+
+    // --- HALCYON (Centaur Ranger: Horse lower body, bow on back) ---
+    if (spec.type === "halcyon") {
+      // Horse lower body (gx 4..27, gy 18..28)
+      if (gx >= 4 && gx <= 27 && gy >= 18 && gy <= 28) {
+        if (gx === 4 || gx === 27 || gy === 18 || gy === 28) return OUTLINE;
+        if (gy >= 25 && (gx <= 8 || (gx >= 12 && gx <= 15) || (gx >= 18 && gx <= 20) || gx >= 24)) {
+          return [40, 25, 15, 255]; // Hooves
+        }
+        return [120, 75, 40, 255]; // Chestnut horse body
+      }
+    }
+
+    // General Head Structure (gx: 9..22, gy: 4..15)
+    const isHead = (gx >= 9 && gx <= 22 && gy >= 4 && gy <= 15);
+    // General Upper Torso Structure (gx: 10..21, gy: 16..27)
+    const isBody = (gx >= 10 && gx <= 21 && gy >= 16 && gy <= 27);
 
     if (!isHead && !isBody) {
       return [0, 0, 0, 0];
     }
 
-    // Black 1px outline
+    // 1px Outer Black Pixel Outline
     if (
-      px === 9 || px === 22 || py === 4 || py === 16 ||
-      (py >= 17 && (px === 10 || px === 21 || py === 27))
+      gx === 9 || gx === 22 || gy === 4 || gy === 15 ||
+      (gy >= 16 && (gx === 10 || gx === 21 || gy === 27))
     ) {
       return OUTLINE;
     }
 
-    // Hair Top (py 4..8)
-    if (py >= 4 && py <= 8 && s.type !== "hooded") {
-      return [...s.hair, 255];
+    // Hair Top (gy 4..8)
+    if (gy >= 4 && gy <= 8) {
+      return [...spec.hair, 255];
     }
 
-    // Eyes (row 0: Front, row 1/2: Side)
-    if (row === 0 && (py === 10 || py === 11)) {
-      if (px === 13 || px === 18) return [...s.eye, 255];
-      if (px === 14 || px === 19) return [255, 255, 255, 255]; // Eye shine highlight
-    } else if ((row === 1 || row === 2) && (py === 10 || py === 11)) {
-      const eyeX = row === 1 ? 12 : 19;
-      if (px === eyeX) return [...s.eye, 255];
+    // Expressive Eyes with Shine
+    if (gy === 10 || gy === 11) {
+      if (gx === 13 || gx === 18) return [...spec.eye, 255];
+      if (gx === 14 || gx === 19) return [255, 255, 255, 255]; // Eye shine
     }
 
-    // Elf ears (px 7..8 & 23..24)
-    if (s.type === "elf" && (py === 10 || py === 11)) {
-      if (px === 8 || px === 23) return [...s.skin, 255];
+    // Face Fill
+    if (gy <= 15) {
+      return [...spec.skin, 255];
     }
 
-    // Dragon Horns
-    if (s.type === "dragon" && py <= 6) {
-      if (px === 10 || px === 21) return [...s.accent, 255];
+    // Torso Armor & Outfit Fill
+    if (gy >= 16 && gy <= 24) {
+      if (gy === 16 || gy === 17) return [...spec.accent, 255]; // Collar / Shoulder armor
+      return [...spec.outfit, 255];
     }
 
-    // Orc Tusks
-    if (s.type === "orc" && py === 13 && (px === 13 || px === 18)) {
-      return [240, 240, 230, 255];
-    }
-
-    // Hooded cloak (Sable)
-    if (s.type === "hooded" && py <= 15) {
-      if (py >= 9 && py <= 13 && px >= 12 && px <= 19) {
-        return [...s.skin, 255]; // Pale face sliver
-      }
-      return [...s.outfit, 255];
-    }
-
-    // Head Face Fill
-    if (py <= 16) {
-      return [...s.skin, 255];
-    }
-
-    // Body Outfit & Armor Details
-    if (py >= 17 && py <= 24) {
-      // Armor / Collar detail
-      if (py === 17 || py === 18) return [...s.accent, 255];
-      return [...s.outfit, 255];
-    }
-
-    // Legs walk bounce (col 1 & 2)
-    const legOffset = (col === 1 ? -1 : col === 2 ? 1 : 0);
-    if (py >= 25 && py <= 26) {
-      const legLeft = px >= 11 + legOffset && px <= 14 + legOffset;
-      const legRight = px >= 17 - legOffset && px <= 20 - legOffset;
-      if (legLeft || legRight) {
-        return [...s.hair, 255]; // Boots / trousers color
-      }
-    }
-
-    return [...s.outfit, 255];
+    // Trousers & Boots
+    return [...spec.hair, 255];
   });
 
-  fs.writeFileSync(path.join(outputDir, `${char}.png`), pngBuffer);
-  console.log(`Generated high-detail sprite: ${char}.png`);
+  fs.writeFileSync(path.join(outputDir, `${charKey}.png`), pngBuffer);
+  console.log(`Generated high-resolution 256x256 single-pose character: ${charKey}.png`);
 });
 
-// Generate Theme 2: Frozen Peaks (Ice Mountain Theme)
-const frozenDir = path.join(process.cwd(), 'public', 'themes', 'frozen-peaks');
-if (!fs.existsSync(frozenDir)) {
-  fs.mkdirSync(frozenDir, { recursive: true });
-}
-
-const frozenBuffer = generatePNG(320, 320, (x, y) => {
-  const tileX = Math.floor(x / 32);
-  const tileY = Math.floor(y / 32);
-  const isEven = (tileX + tileY) % 2 === 0;
-
-  if (x % 32 === 0 || y % 32 === 0) {
-    return [60, 100, 140, 255]; // Ice grid border
-  }
-
-  if (isEven) {
-    return [175, 215, 240, 255]; // Light blue ice
-  } else {
-    return [140, 190, 225, 255]; // Deep frost blue
-  }
-});
-fs.writeFileSync(path.join(frozenDir, 'board.png'), frozenBuffer);
-
-console.log('High-detail 2D Chibi Pixel Sprites & Theme Boards generated successfully!');
+console.log('High-resolution 256x256 Single-Pose Character Sprites generated successfully!');
