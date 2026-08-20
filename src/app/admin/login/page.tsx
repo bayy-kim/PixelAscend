@@ -76,7 +76,13 @@ export default async function AdminLoginPage({ searchParams }: PageProps) {
             />
           </div>
 
-          {error && (
+          {error === "AccessDenied" && (
+            <div className="p-3 bg-[#C24A4A]/20 border border-[#C24A4A]/40 rounded text-[11px] text-[#C24A4A] font-mono leading-relaxed">
+              [ERR] Akses Ditolak: Akun Anda tidak memiliki peran ADMIN. Silakan login dengan email &amp; password Admin di bawah.
+            </div>
+          )}
+
+          {error && error !== "AccessDenied" && (
             <div className="p-3 bg-[#C24A4A]/20 border border-[#C24A4A]/40 rounded text-[11px] text-[#C24A4A] font-mono">
               [ERR] Email atau Password salah!
             </div>

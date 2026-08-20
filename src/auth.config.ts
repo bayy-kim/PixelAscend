@@ -77,9 +77,11 @@ export const authConfig = {
 
       // Protect admin routes
       if (nextUrl.pathname.startsWith("/admin") && nextUrl.pathname !== "/admin/login") {
-        if (!isLoggedIn) return false;
+        if (!isLoggedIn) {
+          return Response.redirect(new URL("/admin/login", nextUrl));
+        }
         if (auth?.user?.role !== "ADMIN") {
-          return Response.redirect(new URL("/dashboard", nextUrl));
+          return Response.redirect(new URL("/admin/login?error=AccessDenied", nextUrl));
         }
       }
 
