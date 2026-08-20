@@ -80,7 +80,12 @@ export const authConfig = {
         if (!isLoggedIn) {
           return Response.redirect(new URL("/admin/login", nextUrl));
         }
-        if (auth?.user?.role !== "ADMIN") {
+        const adminEmail = process.env.ADMIN_EMAIL;
+        const isAdminUser =
+          auth?.user?.role === "ADMIN" ||
+          (adminEmail && auth?.user?.email === adminEmail);
+
+        if (!isAdminUser) {
           return Response.redirect(new URL("/admin/login?error=AccessDenied", nextUrl));
         }
       }
