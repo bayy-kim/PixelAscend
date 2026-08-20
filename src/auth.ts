@@ -41,11 +41,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
     async signIn({ user }) {
-      // Auto-promote muhamadaibayu@gmail.com to ADMIN upon Google or Credentials sign-in
-      if (user.email === "muhamadaibayu@gmail.com") {
+      // Auto-promote designated admin email from environment variable to ADMIN upon Google or Credentials sign-in
+      const adminEmail = process.env.ADMIN_EMAIL;
+      if (adminEmail && user.email === adminEmail) {
         const { db } = await import("@/lib/db");
         await db.user.updateMany({
-          where: { email: "muhamadaibayu@gmail.com" },
+          where: { email: adminEmail },
           data: { role: "ADMIN" },
         });
       }
