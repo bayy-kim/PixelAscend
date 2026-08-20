@@ -45,12 +45,29 @@ export async function createRoom(themeId: string) {
   }
 
   try {
+    const firstChar = await db.character.findFirst({
+      where: { isEnabled: true },
+    });
+    if (!firstChar) {
+      return { error: "Tidak ada karakter aktif di katalog." };
+    }
+
     const room = await db.room.create({
       data: {
         code,
         themeId,
         hostUserId: session.user.id,
         status: "LOBBY",
+        players: {
+          create: {
+            userId: session.user.id,
+            characterId: firstChar.id,
+            turnOrder: 0,
+            position: 0,
+            isReady: true, // Host is ready by default
+            heldCards: [],
+          },
+        },
       },
     });
 

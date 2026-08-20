@@ -51,14 +51,35 @@ export default async function RoomLobbyPage({ params }: PageProps) {
   }
 
   // Automatically join lobby for current user if not already in player list
-  const inLobby = room.players.some((p: any) => p.userId === session.user.id);
+  let roomPlayers = room.players;
+  const inLobby = roomPlayers.some((p: any) => p.userId === session.user.id);
   if (!inLobby) {
     const joinRes = await joinLobby(roomCode);
     if (joinRes?.error) {
       redirect("/dashboard");
     }
-    // Redirect to refresh server component data after joining
-    redirect(`/room/${roomCode}`);
+    // Re-fetch players list
+    const updatedRoom = await db.room.findUnique({
+      where: { code: roomCode },
+      include: {
+        players: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                nickname: true,
+                image: true,
+                avatarUrl: true,
+              },
+            },
+          },
+          orderBy: { joinedAt: "asc" },
+        },
+      },
+    });
+    if (updatedRoom) {
+      roomPlayers = updatedRoom.players;
+    }
   }
 
   // Load all characters from catalog to choose from
@@ -100,7 +121,7 @@ export default async function RoomLobbyPage({ params }: PageProps) {
           roomCode={roomCode}
           currentUserId={session.user.id}
           hostUserId={room.hostUserId}
-          initialPlayers={room.players}
+          initialPlayers={roomPlayers}
           charactersList={characters}
         />
       </main>
