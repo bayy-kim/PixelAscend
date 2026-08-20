@@ -108,7 +108,7 @@ export default function LobbyClient({
 
   // Handle character choice
   const handlePickCharacter = (charId: string, palette: string = "default") => {
-    if (isReady) return; // Cannot change while ready
+    if (isReady && !isHost) return; // Cannot change while ready (except host)
     setError(null);
 
     startPickTransition(async () => {
@@ -210,7 +210,7 @@ export default function LobbyClient({
               <button
                 key={char.id}
                 onClick={() => !isTakenByOther && handlePickCharacter(char.id, selectedPalette)}
-                disabled={isTakenByOther || isReady}
+                disabled={isTakenByOther || (isReady && !isHost)}
                 className={`p-4 bg-[#1B1A1F] border-2 rounded flex flex-col items-center gap-3 transition-all relative overflow-hidden group ${
                   isSelected 
                     ? "border-[#E8A33D] shadow-[0_0_10px_rgba(232,163,61,0.2)]" 
