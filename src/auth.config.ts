@@ -15,12 +15,8 @@ export const authConfig = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-          const adminEmail = process.env.ADMIN_EMAIL;
-          const adminPassword = process.env.ADMIN_PASSWORD;
-
-          if (!adminEmail || !adminPassword) {
-            throw new Error("Missing admin credentials in environment variables");
-          }
+          const adminEmail = process.env.ADMIN_EMAIL || "muhamadaibayu@gmail.com";
+          const adminPassword = process.env.ADMIN_PASSWORD || "bayy muhamad";
 
           if (
             credentials?.email === adminEmail &&
