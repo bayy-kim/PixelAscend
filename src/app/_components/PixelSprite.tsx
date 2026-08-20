@@ -6,11 +6,19 @@ export type Direction = "down" | "left" | "right" | "up";
 
 interface PixelSpriteProps {
   characterId: string;
+  variant?: string; // "default" | "crimson" | "moss" | "azure"
   direction?: Direction;
   isWalking?: boolean;
   size?: number; // width & height in px for display
   className?: string;
 }
+
+const PALETTE_FILTERS: Record<string, string> = {
+  default: "none",
+  crimson: "hue-rotate(-40deg) saturate(1.8)",
+  moss: "hue-rotate(90deg) saturate(1.4)",
+  azure: "hue-rotate(180deg) saturate(1.5)",
+};
 
 const DIRECTION_ROW_MAP: Record<Direction, number> = {
   down: 0,
@@ -21,6 +29,7 @@ const DIRECTION_ROW_MAP: Record<Direction, number> = {
 
 export const PixelSprite: React.FC<PixelSpriteProps> = ({
   characterId,
+  variant = "default",
   direction = "down",
   isWalking = false,
   size = 48,
@@ -49,6 +58,8 @@ export const PixelSprite: React.FC<PixelSpriteProps> = ({
   const backgroundPositionY = -row * size;
   const backgroundSize = `${size * 3}px ${size * 4}px`;
 
+  const filterStyle = PALETTE_FILTERS[variant.toLowerCase()] || "none";
+
   return (
     <div
       className={`pixelated inline-block relative ${className}`}
@@ -60,6 +71,7 @@ export const PixelSprite: React.FC<PixelSpriteProps> = ({
         backgroundSize: backgroundSize,
         backgroundRepeat: "no-repeat",
         imageRendering: "pixelated",
+        filter: filterStyle,
       }}
     />
   );

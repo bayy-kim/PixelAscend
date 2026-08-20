@@ -245,8 +245,8 @@ export default function LobbyClient({
         {activeCharData && (
           <div className="bg-[#1B1A1F] rounded p-6 border border-[#4B4A57]/20 flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row items-center gap-6">
-              {/* Selected representation */}
-              <PixelSprite characterId={activeCharData.id} direction="down" isWalking={true} size={56} />
+                {/* Selected representation */}
+                <PixelSprite characterId={activeCharData.id} variant={selectedPalette} direction="down" isWalking={true} size={56} />
 
               <div className="flex-1 flex flex-col gap-2">
                 <span className="text-sm font-press-start text-[#E8A33D]">

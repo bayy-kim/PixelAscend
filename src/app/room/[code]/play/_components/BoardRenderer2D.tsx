@@ -219,18 +219,28 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
             <div className="relative flex flex-col items-center">
-              {/* Turn Highlight Ring */}
+              {/* Turn Highlight Ring & Camera Beacon */}
               {isCurrentTurn && (
-                <motion.div
-                  className="absolute -inset-1 rounded-full border-2 border-[#E8A33D] shadow-[0_0_8px_#E8A33D]"
-                  animate={{ opacity: [0.4, 1, 0.4] }}
-                  transition={{ repeat: Infinity, duration: 1.2 }}
-                />
+                <>
+                  <motion.div
+                    className="absolute -inset-2 rounded-full border-2 border-[#E8A33D] shadow-[0_0_12px_#E8A33D]"
+                    animate={{ opacity: [0.3, 1, 0.3], scale: [0.95, 1.1, 0.95] }}
+                    transition={{ repeat: Infinity, duration: 1 }}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: -18 }}
+                    className="absolute top-0 text-[10px] font-bold font-press-start text-[#E8A33D] drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] z-30"
+                  >
+                    ▼
+                  </motion.div>
+                </>
               )}
 
               {/* 2D Chibi Pixel Sprite */}
               <PixelSprite
                 characterId={player.characterId}
+                variant={player.cosmeticVariant || "default"}
                 direction="down"
                 isWalking={isCurrentTurn}
                 size={32}
