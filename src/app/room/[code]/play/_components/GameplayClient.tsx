@@ -90,12 +90,22 @@ export default function GameplayClient({
     return () => clearInterval(interval);
   }, [turnIndex, status, isMyTurn]);
 
-  // Haptic & Sound notification when turn changes to user
+  // CPU Computer Automatic Turn Handler (If active turn player is CPU, Host triggers roll automatically after 1.2s delay)
+  const isHost = currentUserId === sortedPlayers[0]?.userId;
+  const isCpuTurn = activeTurnPlayer?.userId?.startsWith("cpu_");
+
   useEffect(() => {
-    if (isMyTurn) {
-      triggerHaptic("turn");
-    }
-  }, [isMyTurn]);
+    if (status !== "IN_PROGRESS" || !isCpuTurn || !isHost || isRolling || isPendingRoll) return;
+
+    const timer = setTimeout(() => {
+      startRollTransition(async () => {
+        const res = await rollDice(roomCode);
+        if (res?.error) console.warn("CPU roll warning:", res.error);
+      });
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, [turnIndex, status, isCpuTurn, isHost, isRolling, isPendingRoll, roomCode]);
 
   useEffect(() => {
     const channelName = `presence-room-${roomCode}`;

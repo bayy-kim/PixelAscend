@@ -5,6 +5,92 @@ import { db } from "@/lib/db";
 import { pusherServer } from "@/lib/pusher-server";
 import { revalidatePath } from "next/cache";
 
+export async function addCpuPlayer(roomCode: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    const room = await db.room.findUnique({
+      where: { code: roomCode },
+      include: { players: true },
+    });
+
+    if (!room || room.status !== "LOBBY") {
+      return { error: "Lobby tidak aktif." };
+    }
+
+    if (room.hostUserId !== session.user.id) {
+      return { error: "Hanya Host yang dapat menambah CPU / Computer." };
+    }
+
+    if (room.players.length >= 8) {
+      return { error: "Room sudah penuh (maksimal 8 pemain)." };
+    }
+
+    // Generate unique CPU User ID and Name
+    const cpuNumber = room.players.filter((p: any) => p.userId.startsWith("cpu_")).length + 1;
+    const cpuUserId = `cpu_${Date.now()}_${cpuNumber}`;
+    const cpuName = `CPU ${cpuNumber} (Computer)`;
+
+    // Ensure CPU User exists in database
+    await db.user.upsert({
+      where: { id: cpuUserId },
+      update: {},
+      create: {
+        id: cpuUserId,
+        email: `${cpuUserId}@pixelascend.local`,
+        name: cpuName,
+        nickname: cpuName,
+      },
+    });
+
+    // Find first available untaken character
+    const takenCharIds = room.players.map((p: any) => p.characterId);
+    const availableChar = await db.character.findFirst({
+      where: {
+        isEnabled: true,
+        id: { notIn: takenCharIds.length ? takenCharIds : [""] },
+      },
+    });
+
+    if (!availableChar) {
+      return { error: "Semua karakter di room ini sudah dipilih." };
+    }
+
+    // Create RoomPlayer entry for CPU (ready by default)
+    await db.roomPlayer.create({
+      data: {
+        roomId: room.id,
+        userId: cpuUserId,
+        characterId: availableChar.id,
+        turnOrder: room.players.length,
+        position: 0,
+        isReady: true,
+        heldCards: [],
+      },
+    });
+
+    // Notify other players
+    try {
+      await pusherServer.trigger(`presence-room-${roomCode}`, "player-joined", {
+        userId: cpuUserId,
+        name: cpuName,
+        nickname: cpuName,
+      });
+    } catch (pusherErr) {
+      console.warn("Pusher trigger warning:", pusherErr);
+    }
+
+    revalidatePath(`/room/${roomCode}`);
+    return { success: true };
+  } catch (err) {
+    console.error("addCpuPlayer error:", err);
+    return { error: "Gagal menambahkan CPU / Computer." };
+  }
+}
+
 export async function joinLobby(roomCode: string) {
   const session = await auth();
   if (!session?.user?.id) {

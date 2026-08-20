@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { pusherClient } from "@/lib/pusher-client";
-import { selectCharacterAndPalette, toggleReady, startGame, leaveLobby, kickPlayer } from "../_actions/lobby";
+import { selectCharacterAndPalette, toggleReady, startGame, leaveLobby, kickPlayer, addCpuPlayer } from "../_actions/lobby";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { User, Check, Play, LogOut, Copy, Share2, CheckCheck, UserX } from "lucide-react";
+import { User, Check, Play, LogOut, Copy, Share2, CheckCheck, UserX, Bot, Loader2 } from "lucide-react";
 import { PixelSprite } from "@/app/_components/PixelSprite";
 
 interface CharacterData {
@@ -56,6 +56,7 @@ export default function LobbyClient({
   const [isPendingReady, startReadyTransition] = useTransition();
   const [isPendingPick, startPickTransition] = useTransition();
   const [isPendingStart, startStartTransition] = useTransition();
+  const [isPendingCpu, startCpuTransition] = useTransition();
 
   const isHost = currentUserId === hostUserId;
   const selfPlayer = players.find((p) => p.userId === currentUserId);
@@ -79,21 +80,58 @@ export default function LobbyClient({
 
     const channel = pusherClient.subscribe(channelName);
 
-    // Live update triggers
-    channel.bind("player-joined", () => {
-      // Re-fetch users simply by refreshing route to fetch dynamic server state
+    // Live update triggers with instant local state sync
+    channel.bind("player-joined", (data: any) => {
+      if (data?.userId && data?.name) {
+        setPlayers((prev) => {
+          if (prev.some((p) => p.userId === data.userId)) return prev;
+          return [
+            ...prev,
+            {
+              id: data.userId,
+              userId: data.userId,
+              characterId: "dawn",
+              cosmeticVariant: "default",
+              isReady: data.userId.startsWith("cpu_"),
+              user: {
+                name: data.name,
+                nickname: data.nickname || data.name,
+                image: null,
+                avatarUrl: null,
+              },
+            },
+          ];
+        });
+      }
       router.refresh();
     });
 
-    channel.bind("player-left", () => {
+    channel.bind("player-left", (data: any) => {
+      if (data?.userId) {
+        setPlayers((prev) => prev.filter((p) => p.userId !== data.userId));
+      }
       router.refresh();
     });
 
-    channel.bind("player-picked-character", () => {
+    channel.bind("player-picked-character", (data: any) => {
+      if (data?.userId && data?.characterId) {
+        setPlayers((prev) =>
+          prev.map((p) =>
+            p.userId === data.userId
+              ? { ...p, characterId: data.characterId, cosmeticVariant: data.cosmeticVariant || "default" }
+              : p
+          )
+        );
+      }
       router.refresh();
     });
 
-    channel.bind("player-ready", () => {
+    channel.bind("player-ready", (data: any) => {
+      if (data?.userId !== undefined) {
+        setPlayers((prev) =>
+          prev.map((p) => (p.userId === data.userId ? { ...p, isReady: data.isReady } : p))
+        );
+      }
       router.refresh();
     });
 
@@ -106,18 +144,24 @@ export default function LobbyClient({
     };
   }, [roomCode, router]);
 
-  // Handle character choice
+  // Handle character choice with Instant 0ms Optimistic UI update
   const handlePickCharacter = (charId: string, palette: string = "default") => {
     if (isReady && !isHost) return; // Cannot change while ready (except host)
     setError(null);
+
+    // Instant 0ms local state feedback for responsive UX
+    setSelectedChar(charId);
+    setSelectedPalette(palette);
 
     startPickTransition(async () => {
       const res = await selectCharacterAndPalette(roomCode, charId, palette);
       if (res?.error) {
         setError(res.error);
-      } else {
-        setSelectedChar(charId);
-        setSelectedPalette(palette);
+        // Revert on server error
+        if (selfPlayer) {
+          setSelectedChar(selfPlayer.characterId);
+          setSelectedPalette(selfPlayer.cosmeticVariant);
+        }
       }
     });
   };
@@ -157,6 +201,16 @@ export default function LobbyClient({
       const text = `Ayo main Ular Tangga PixelAscend bersamaku! Kode Room: ${roomCode}. Masuk lewat link ini: ${url}`;
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
     }
+  };
+
+  const handleAddCpu = () => {
+    setError(null);
+    startCpuTransition(async () => {
+      const res = await addCpuPlayer(roomCode);
+      if (res?.error) {
+        setError(res.error);
+      }
+    });
   };
 
   const handleLeave = async () => {
@@ -289,7 +343,24 @@ export default function LobbyClient({
       <div className="lg:col-span-4 flex flex-col gap-6 bg-[#232129] border border-[#4B4A57]/30 rounded-lg p-6 shadow-xl">
         <div className="flex items-center justify-between border-b border-[#4B4A57]/20 pb-4">
           <h2 className="font-press-start text-xs text-[#F2E9D8]">PLAYER LIST</h2>
-          <span className="font-mono text-xs text-[#F2E9D8]/50">({players.length}/8)</span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xs text-[#F2E9D8]/50">({players.length}/8)</span>
+            {isHost && players.length < 8 && (
+              <button
+                onClick={handleAddCpu}
+                disabled={isPendingCpu}
+                className="px-2 py-1 bg-[#5FA35A]/20 hover:bg-[#5FA35A]/30 text-[#5FA35A] border border-[#5FA35A]/40 rounded text-[10px] font-mono flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                title="Tambah Pemain Komputer CPU"
+              >
+                {isPendingCpu ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Bot className="w-3 h-3" />
+                )}
+                <span>+ CPU</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Players list */}
