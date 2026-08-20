@@ -18,14 +18,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Bad Request" }, { status: 400 });
     }
 
-    // Authenticate the presence channel using user session info
+    // Construct clean user_info object without any undefined fields
+    const userInfo: Record<string, any> = {
+      name: session.user.name || "Pemain",
+    };
+    if (session.user.nickname) {
+      userInfo.nickname = session.user.nickname;
+    }
+
+    // Authenticate the presence channel using official Pusher SDK method
     const authResponse = pusherServer.authorizeChannel(socketId, channelName, {
       user_id: session.user.id,
-      user_info: {
-        name: session.user.name,
-        nickname: session.user.nickname,
-        image: session.user.image,
-      },
+      user_info: userInfo,
     });
 
     return NextResponse.json(authResponse);
