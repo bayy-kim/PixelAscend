@@ -165,3 +165,9 @@ model AdminAuditLog {
   detail      Json?
   createdAt   DateTime @default(now())
 }
+
+model AdminLoginAttempt {
+  id         String   @id @default(cuid())
+  identifier String   // email or identifier attempted
+  createdAt  DateTime @default(now())
+}

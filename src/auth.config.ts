@@ -2,6 +2,22 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import type { NextAuthConfig } from "next-auth";
 
+// Edge-compatible constant-time comparison helper using Web Crypto API
+async function constantTimeCompare(a: string, b: string): Promise<boolean> {
+  if (!a || !b) return false;
+  const encoder = new TextEncoder();
+  const dataA = encoder.encode(a);
+  const dataB = encoder.encode(b);
+  const hashA = new Uint8Array(await crypto.subtle.digest("SHA-256", dataA));
+  const hashB = new Uint8Array(await crypto.subtle.digest("SHA-256", dataB));
+
+  let result = 0;
+  for (let i = 0; i < hashA.length; i++) {
+    result |= hashA[i] ^ hashB[i];
+  }
+  return result === 0;
+}
+
 export const authConfig = {
   providers: [
     GoogleProvider({
@@ -15,22 +31,50 @@ export const authConfig = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-          const adminEmail = (process.env.ADMIN_EMAIL || "").trim();
-          const adminPassword = (process.env.ADMIN_PASSWORD || "").trim();
+        const adminEmail = (process.env.ADMIN_EMAIL || "").trim();
+        const adminPassword = (process.env.ADMIN_PASSWORD || "").trim();
 
-          const inputEmail = typeof credentials?.email === "string" ? credentials.email.trim() : "";
-          const inputPassword = typeof credentials?.password === "string" ? credentials.password.trim() : "";
+        const inputEmail = typeof credentials?.email === "string" ? credentials.email.trim() : "";
+        const inputPassword = typeof credentials?.password === "string" ? credentials.password.trim() : "";
 
-          if (!adminEmail || !adminPassword) {
-            throw new Error("Missing admin credentials in environment variables");
+        if (!adminEmail || !adminPassword) {
+          console.error("Missing ADMIN_EMAIL or ADMIN_PASSWORD in environment variables");
+          return null;
+        }
+
+        const { db } = await import("@/lib/db");
+
+        // DB-based rate limiting & cleanup for serverless Vercel environment
+        try {
+          // Cleanup old login attempts older than 24 hours
+          const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          await db.adminLoginAttempt.deleteMany({
+            where: { createdAt: { lt: oneDayAgo } },
+          });
+
+          // Count failed login attempts for this email identifier in the last 15 minutes
+          const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
+          const attemptCount = await db.adminLoginAttempt.count({
+            where: {
+              identifier: inputEmail || "unknown",
+              createdAt: { gte: fifteenMinsAgo },
+            },
+          });
+
+          // Block if >= 5 failed attempts in last 15 mins
+          if (attemptCount >= 5) {
+            console.warn(`Admin login rate limited for identifier: ${inputEmail}`);
+            return null;
           }
+        } catch (dbErr) {
+          console.error("Admin login rate-limit DB check error:", dbErr);
+        }
 
-          if (
-            inputEmail === adminEmail &&
-            inputPassword === adminPassword
-          ) {
-          const { db } = await import("@/lib/db");
-          
+        // Constant-time comparison using SHA-256 digests to prevent timing attacks
+        const isEmailMatch = await constantTimeCompare(inputEmail, adminEmail);
+        const isPasswordMatch = await constantTimeCompare(inputPassword, adminPassword);
+
+        if (isEmailMatch && isPasswordMatch) {
           let user = await db.user.findUnique({
             where: { email: adminEmail },
           });
@@ -58,6 +102,17 @@ export const authConfig = {
             role: user.role,
             status: user.status,
           };
+        } else {
+          // Record failed login attempt to DB for rate limiting
+          try {
+            await db.adminLoginAttempt.create({
+              data: {
+                identifier: inputEmail || "unknown",
+              },
+            });
+          } catch (logErr) {
+            console.error("Failed to record AdminLoginAttempt:", logErr);
+          }
         }
 
         return null;
