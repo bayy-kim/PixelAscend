@@ -368,6 +368,7 @@ export async function rollDice(roomCode: string) {
       guardiansWardArmed: p.guardiansWardArmed,
       pendingDiceRoll: p.pendingDiceRoll,
       isUntargetable: p.isUntargetable,
+      consecutiveSixes: p.consecutiveSixes || 0,
     }));
 
     // 2. Resolve turn on server using our core game engine
@@ -388,6 +389,7 @@ export async function rollDice(roomCode: string) {
         guardiansWardArmed: updatedActivePlayerState?.guardiansWardArmed || false,
         pendingDiceRoll: null, // Clear pending roll after turn resolution
         isUntargetable: updatedActivePlayerState?.isUntargetable || false,
+        consecutiveSixes: resolution.consecutiveSixes || 0,
         isWinner: resolution.winnerUserId === activePlayer.userId,
       },
     });
@@ -429,6 +431,11 @@ export async function rollDice(roomCode: string) {
       nextTurnIndex: resolution.nextTurnIndex,
       winnerUserId: resolution.winnerUserId,
       cardDrawn: resolution.cardDrawn,
+      turnSkipped: resolution.turnSkipped,
+      turnSkippedReason: resolution.turnSkippedReason,
+      isExtraTurn: resolution.isExtraTurn,
+      consecutiveSixes: resolution.consecutiveSixes,
+      overchargedReset: resolution.overchargedReset,
     });
 
     // Revalidate paths

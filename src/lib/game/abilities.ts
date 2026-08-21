@@ -14,6 +14,7 @@ export interface PlayerState {
   guardiansWardArmed?: boolean; // Dawn
   pendingDiceRoll?: number | null; // Wren
   isUntargetable?: boolean; // Sable
+  consecutiveSixes?: number; // Dadu 6 streak counter
 }
 
 export interface AbilityContext {

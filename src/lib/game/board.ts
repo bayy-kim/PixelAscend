@@ -49,7 +49,7 @@ export const BOARD_LAYOUT: BoardLayout = {
   87: { type: "hazard", name: "Shadow Vine", description: "Terjerat akar bayangan turun ke tile 24", targetTile: 24 },
   93: { type: "hazard", name: "Shadow Vine", description: "Terjerat akar bayangan turun ke tile 73", targetTile: 73 },
   95: { type: "hazard", name: "Shadow Vine", description: "Terjerat akar bayangan turun ke tile 75", targetTile: 75 },
-  98: { type: "hazard", name: "Shadow Vine", description: "Terjerat akar bayangan turun ke tile 79", targetTile: 79 },
+  98: { type: "hazard", name: "Giant Shadow Vine", description: "Terjerat Akar Bayangan Utama jatuh ke Checkpoint Tengah (Tile 48)!", targetTile: 48 },
 
   // Event tiles - immediate movement / status effects
   12: { type: "event", name: "Wisp's Blessing", description: "Maju 3 tile tambahan", magnitude: 3 },

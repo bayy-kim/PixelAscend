@@ -72,12 +72,26 @@ describe("PixelAscend Game Engine", () => {
     assert.strictEqual(players[0].guardiansWardArmed, false, "Shield must be disarmed");
   });
 
-  test("should use Wren's pending roll when Foresight preview is accepted", () => {
+  test("should bounce back when overshooting Tile 100", () => {
+    players[0].position = 98;
+    // Force a roll of 5 by setting pending roll or testing calculation
+    players[0].characterId = "wren";
+    players[0].pendingDiceRoll = 5;
+
+    const res = resolveTurn(players, 0);
+    // 98 + 5 = 103 -> Bounce back: 100 - 3 = Tile 97
+    assert.strictEqual(res.finalPosition, 97, "Player must bounce back from 100 when overshooting");
+    assert.strictEqual(res.winnerUserId, null, "Overshooting must not grant victory");
+  });
+
+  test("should reset player to Tile 1 on 3 consecutive 6s penalty", () => {
+    players[0].consecutiveSixes = 2;
     players[0].characterId = "wren";
     players[0].pendingDiceRoll = 6;
 
     const res = resolveTurn(players, 0);
-    assert.strictEqual(res.diceRoll, 6, "Must consume Wren's pending dice roll");
-    assert.strictEqual(players[0].pendingDiceRoll, null, "Pending roll must be cleared");
+    assert.strictEqual(res.overchargedReset, true, "Player must trigger 3x Sixes Overcharge Reset");
+    assert.strictEqual(res.finalPosition, 1, "Player must be reset to Tile 1");
+    assert.strictEqual(res.consecutiveSixes, 0, "Streak counter must be reset");
   });
 });

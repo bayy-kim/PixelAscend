@@ -12,6 +12,9 @@ export interface TurnResolution {
   cardDrawn: string | null;
   turnSkipped?: boolean;
   turnSkippedReason?: string | null;
+  isExtraTurn?: boolean;
+  consecutiveSixes?: number;
+  overchargedReset?: boolean;
 }
 
 /**
@@ -57,6 +60,40 @@ export function resolveTurn(
   let diceRoll = Math.floor(Math.random() * 6) + 1;
   let rollModifier = 0;
 
+  // Track consecutive 6s
+  let currentSixes = activePlayer.consecutiveSixes || 0;
+  if (diceRoll === 6) {
+    currentSixes += 1;
+  } else {
+    currentSixes = 0;
+  }
+
+  // 3x Sixes Penalty Check: reset player to Tile 1, end turn
+  if (currentSixes >= 3) {
+    activePlayer.consecutiveSixes = 0;
+    activePlayer.position = 1;
+    const nextTurnIndex = (currentTurnIndex + 1) % roomPlayers.length;
+    return {
+      diceRoll: 6,
+      rollModifier: 0,
+      path: [1],
+      effectTriggered: {
+        type: "hazard",
+        name: "Overcharged (3x Sixes)",
+        description: "Mendapatkan dadu 6 sebanyak 3 kali berturut-turut! Karakter tergelincir kembali ke Tile 1!",
+        targetTile: 1,
+      },
+      finalPosition: 1,
+      nextTurnIndex,
+      winnerUserId: null,
+      cardDrawn: null,
+      consecutiveSixes: 0,
+      overchargedReset: true,
+    };
+  }
+
+  activePlayer.consecutiveSixes = currentSixes;
+
   // Wren Foresight check: if pendingDiceRoll is present, use it
   if (activePlayer.characterId === "wren" && activePlayer.pendingDiceRoll) {
     diceRoll = activePlayer.pendingDiceRoll;
@@ -76,11 +113,17 @@ export function resolveTurn(
 
   const steps = diceRoll + rollModifier;
   
-  // Calculate intermediate paths
+  // Calculate intermediate paths & Bounce Back logic for Tile 100
   const path: number[] = [];
   let tempPos = startPos;
+
   for (let i = 1; i <= steps; i++) {
-    tempPos = Math.min(100, tempPos + 1);
+    if (tempPos < 100) {
+      tempPos += 1;
+    } else {
+      // Bounce back backwards if overshooting 100
+      tempPos -= 1;
+    }
     path.push(tempPos);
   }
 
@@ -166,8 +209,8 @@ export function resolveTurn(
     }
   }
 
-  // 3. Win check (tile 100)
-  const isWinner = finalPos >= 100;
+  // 3. Win check (Exact Tile 100)
+  const isWinner = finalPos === 100;
   const winnerUserId = isWinner ? activePlayer.userId : null;
 
   // 4. Update player position & state in our temporary memory copy
@@ -176,8 +219,9 @@ export function resolveTurn(
     activePlayer.isWinner = true;
   }
 
-  // 5. Determine next turn index
-  const nextTurnIndex = (currentTurnIndex + 1) % roomPlayers.length;
+  // 5. Determine next turn index & Extra turn for rolling a 6
+  const isExtraTurn = diceRoll === 6 && !isWinner;
+  const nextTurnIndex = isExtraTurn ? currentTurnIndex : (currentTurnIndex + 1) % roomPlayers.length;
 
   return {
     diceRoll,
@@ -188,5 +232,7 @@ export function resolveTurn(
     nextTurnIndex,
     winnerUserId,
     cardDrawn,
+    isExtraTurn,
+    consecutiveSixes: currentSixes,
   };
 }

@@ -208,8 +208,15 @@ export default function GameplayClient({
           }, 2500);
         }
 
-        // 4. Handle Creeping Fog skip turn toast notification
-        if (data.turnSkipped) {
+        // 4. Handle Extra Turn (Dice 6) or Creeping Fog skip turn toast notification
+        if (data.isExtraTurn) {
+          setActiveCutscene({
+            type: "boost",
+            title: "LUCKY 6! EXTRA TURN",
+            message: `${activeTurnPlayer?.user.nickname || activeTurnPlayer?.user.name} mendapat dadu 6! Dapat giliran melempar dadu lagi!`,
+          });
+          setTimeout(() => setActiveCutscene(null), 2000);
+        } else if (data.turnSkipped) {
           setActiveCutscene({
             type: "hazard",
             title: "CREEPING FOG",
@@ -485,6 +492,11 @@ export default function GameplayClient({
                 <span className="font-press-start text-3xl font-bold text-[#E8A33D] animate-pulse">
                   {rolledValue}
                 </span>
+                {rolledValue === 6 && (
+                  <span className="text-[9px] font-mono text-[#5FA35A] font-bold animate-bounce">
+                    BONUS 6!
+                  </span>
+                )}
                 {modifierValue > 0 && (
                   <span className="text-[9px] font-mono text-[#5FA35A] font-bold">+{modifierValue} modifier</span>
                 )}

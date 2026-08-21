@@ -139,6 +139,7 @@ model RoomPlayer {
   guardiansWardArmed  Boolean   @default(false) // Dawn: Guardian's Ward active shield
   pendingDiceRoll     Int?      // Wren: Foresight pending roll value
   isUntargetable      Boolean   @default(false) // Sable: Vanish 1-round immunity
+  consecutiveSixes    Int       @default(0) // Dadu 6 streak counter (3x sixes = reset to Tile 1)
   isWinner            Boolean   @default(false)
   joinedAt            DateTime  @default(now())
 
