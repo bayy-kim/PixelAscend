@@ -48,12 +48,17 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
   onSkipCutscene,
 }) => {
   // Precompute 100 tile positions (Boustrophedon grid: 10x10)
-  // Tile 1 is at Bottom-Left, Tile 100 at Top-Left
+  // Tile 1 is at Bottom-Left (row 9, col 0), Tile 100 is at Top-Right (row 0, col 9)
   const tileGrid = useMemo(() => {
     const tiles = [];
     for (let i = 1; i <= 100; i++) {
       const rowFromBottom = Math.floor((i - 1) / 10);
       const colInRow = (i - 1) % 10;
+      // Standard Snake & Ladder grid layout:
+      // Row 0 from bottom (1-10): Left-to-Right (col 0 to 9)
+      // Row 1 from bottom (11-20): Right-to-Left (col 9 to 0)
+      // ...
+      // Row 9 from bottom (91-100): Left-to-Right (col 0 to 9), so Tile 100 is at Top-Right!
       const col = rowFromBottom % 2 === 0 ? colInRow : 9 - colInRow;
       const row = 9 - rowFromBottom;
       tiles.push({ tileNumber: i, row, col });
@@ -184,15 +189,15 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
                   : "bg-[#232129]/80 hover:bg-[#4B4A57]/50"
               }`}
             >
-              <span className="absolute top-0.5 left-0.5 opacity-60 text-[8px]">
+              <span className="absolute top-0.5 left-0.5 font-mono text-[9px] font-bold text-[#F2E9D8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] z-10">
                 {tileNumber}
               </span>
 
               {/* Tile Type Badge/Icon */}
-              {isHazard && <span className="text-[7px] font-bold text-purple-200 truncate">VINE</span>}
-              {isBoost && <span className="text-[7px] font-bold text-green-200 truncate">LADDER</span>}
-              {isEvent && <span className="text-[7px] font-bold text-amber-300 truncate">EVT</span>}
-              {isPowerup && <span className="text-[7px] font-bold text-yellow-300 truncate">CHEST</span>}
+              {isHazard && <span className="text-[7px] font-bold text-purple-200 truncate mt-2">VINE</span>}
+              {isBoost && <span className="text-[7px] font-bold text-green-200 truncate mt-2">LADDER</span>}
+              {isEvent && <span className="text-[7px] font-bold text-amber-300 truncate mt-2">EVT</span>}
+              {isPowerup && <span className="text-[7px] font-bold text-yellow-300 truncate mt-2">CHEST</span>}
             </div>
           );
         })}
