@@ -385,14 +385,16 @@ export async function startGame(roomCode: string) {
       return { error: "Permainan sudah dimulai." };
     }
 
-    // Constraints check: >= 2 players, all players ready
+    // Constraints check: >= 2 players, all human non-host players ready (Host & CPU auto-ready)
     if (room.players.length < 2) {
       return { error: "Minimal dibutuhkan 2 pemain untuk memulai." };
     }
 
-    const allReady = room.players.every((p: any) => p.isReady || p.userId === room.hostUserId); // host doesn't need to explicitly click ready
-    if (!allReady) {
-      return { error: "Semua pemain harus bersiap (Ready) terlebih dahulu." };
+    const unreadyPlayer = room.players.find(
+      (p: any) => !p.isReady && p.userId !== room.hostUserId && !p.userId.startsWith("cpu_")
+    );
+    if (unreadyPlayer) {
+      return { error: "Semua pemain manusia harus bersiap (Ready) terlebih dahulu." };
     }
 
     // Shuffle turn order randomly

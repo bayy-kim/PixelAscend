@@ -445,7 +445,7 @@ export default function LobbyClient({
             {isHost ? (
               <button
                 onClick={handleStartGame}
-                disabled={isPendingStart || players.length < 2 || !players.every(p => p.isReady || p.userId === hostUserId)}
+                disabled={isPendingStart || players.length < 2 || !players.every(p => p.isReady || p.userId === hostUserId || p.userId.startsWith("cpu_"))}
                 className="flex-1 h-12 flex items-center justify-center gap-2 bg-[#E8A33D] hover:bg-[#F2B75C] active:translate-y-[1px] text-[#1B1A1F] font-press-start text-xs rounded transition-all cursor-pointer shadow-md disabled:opacity-50"
               >
                 <Play className="w-4 h-4 fill-current" />
