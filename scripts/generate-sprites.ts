@@ -616,6 +616,33 @@ characters.forEach((charKey) => {
   console.log(`Generated anatomically distinct 256x256 pixel character: ${charKey}.png`);
 });
 
+// Generate Theme 1: Wanderer's Path (Mystical Dark Forest Theme)
+const wandererDir = path.join(process.cwd(), 'public', 'themes', 'wanderers-path');
+if (!fs.existsSync(wandererDir)) {
+  fs.mkdirSync(wandererDir, { recursive: true });
+}
+
+const wandererBuffer = generatePNG(320, 320, (x, y) => {
+  const tileX = Math.floor(x / 32);
+  const tileY = Math.floor(y / 32);
+  const isEven = (tileX + tileY) % 2 === 0;
+
+  // Outer Grid Line
+  if (x % 32 === 0 || y % 32 === 0) {
+    return [45, 40, 55, 255];
+  }
+
+  // Winding stone path decoration in background
+  const isPath = (tileY === 1 || tileY === 2 || (tileX === 8 && tileY >= 2 && tileY <= 5) || (tileY === 5 && tileX >= 2 && tileX <= 8) || (tileX === 2 && tileY >= 5 && tileY <= 8));
+
+  if (isPath) {
+    return isEven ? [70, 65, 80, 255] : [60, 55, 70, 255];
+  }
+
+  return isEven ? [32, 28, 38, 255] : [38, 34, 45, 255];
+});
+fs.writeFileSync(path.join(wandererDir, 'board.png'), wandererBuffer);
+
 // Generate Theme 2: Frozen Peaks (Ice Mountain Theme)
 const frozenDir = path.join(process.cwd(), 'public', 'themes', 'frozen-peaks');
 if (!fs.existsSync(frozenDir)) {
@@ -631,10 +658,17 @@ const frozenBuffer = generatePNG(320, 320, (x, y) => {
     return [60, 100, 140, 255]; // Ice grid border
   }
 
+  // Winding cracked ice path in background
+  const isIcePath = (tileY === 8 || (tileX === 7 && tileY >= 4 && tileY <= 8) || (tileY === 4 && tileX >= 1 && tileX <= 7));
+
+  if (isIcePath) {
+    return isEven ? [210, 240, 255, 255] : [190, 225, 250, 255];
+  }
+
   if (isEven) {
-    return [175, 215, 240, 255]; // Light blue ice
+    return [160, 205, 235, 255]; // Light blue ice
   } else {
-    return [140, 190, 225, 255]; // Deep frost blue
+    return [130, 180, 215, 255]; // Deep frost blue
   }
 });
 fs.writeFileSync(path.join(frozenDir, 'board.png'), frozenBuffer);

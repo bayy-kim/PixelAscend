@@ -2,7 +2,17 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { pusherClient } from "@/lib/pusher-client";
-import { rollDice, executeActionCard, sendEmote, rematchRoom } from "../../_actions/gameplay";
+import {
+  rollDice,
+  executeActionCard,
+  sendEmote,
+  rematchRoom,
+  armGuardiansWard,
+  rollDicePreview,
+  executeForesightReroll,
+  armVanish,
+  executeSwiftStride,
+} from "../../_actions/gameplay";
 import { BoardRenderer2D, ActiveEmote } from "./BoardRenderer2D";
 import { BOARD_LAYOUT } from "@/lib/game/board";
 import { sounds, triggerHaptic } from "@/lib/audio-haptics";
@@ -57,16 +67,33 @@ export default function GameplayClient({
   const [turnTimer, setTurnTimer] = useState<number>(15);
   const [activeEmotes, setActiveEmotes] = useState<ActiveEmote[]>([]);
   const [showSwapModal, setShowSwapModal] = useState(false);
+  // Foresight state for Wren
+  const [wrenPreviewRoll, setWrenPreviewRoll] = useState<number | null>(null);
+  const [showSwiftStrideModal, setShowSwiftStrideModal] = useState(false);
   const [activeCutscene, setActiveCutscene] = useState<{
     type: "hazard" | "boost" | "event" | "powerup" | "victory";
     title: string;
     message: string;
   } | null>(null);
 
-  // Determine active turn player
+  // Determine active turn player & self player
   const sortedPlayers = [...players].sort((a, b) => a.turnOrder - b.turnOrder);
   const activeTurnPlayer = sortedPlayers[turnIndex];
+  const selfPlayer = players.find((p) => p.userId === currentUserId);
   const isMyTurn = activeTurnPlayer?.userId === currentUserId;
+
+  // Handle server actions trigger
+  const handleRoll = () => {
+    if (isRolling || isPendingRoll) return;
+    triggerHaptic("light");
+
+    startRollTransition(async () => {
+      const res = await rollDice(roomCode);
+      if (res?.error) {
+        alert(res.error);
+      }
+    });
+  };
 
   // Turn Timer 15s Countdown with Auto-Roll AFK Fallback
   useEffect(() => {
@@ -181,7 +208,17 @@ export default function GameplayClient({
           }, 2500);
         }
 
-        // 4. Update local state turns
+        // 4. Handle Creeping Fog skip turn toast notification
+        if (data.turnSkipped) {
+          setActiveCutscene({
+            type: "hazard",
+            title: "CREEPING FOG",
+            message: `Giliran ${activeTurnPlayer?.user.nickname || activeTurnPlayer?.user.name} dilewati karena efek Creeping Fog!`,
+          });
+          setTimeout(() => setActiveCutscene(null), 2000);
+        }
+
+        // 5. Update local state turns
         setTurnIndex(data.nextTurnIndex);
         if (data.winnerUserId) {
           setStatus("FINISHED");
@@ -202,16 +239,43 @@ export default function GameplayClient({
   }, [roomCode, router, currentUserId]);
 
   // Handle server actions trigger
-  const handleRoll = () => {
-    if (isRolling || isPendingRoll) return;
-    triggerHaptic("light");
+  const handleWrenPreview = async () => {
+    const res = await rollDicePreview(roomCode);
+    if (res?.error) {
+      alert(res.error);
+    } else if (res?.diceRoll) {
+      setWrenPreviewRoll(res.diceRoll);
+    }
+  };
 
-    startRollTransition(async () => {
-      const res = await rollDice(roomCode);
-      if (res?.error) {
-        alert(res.error);
-      }
-    });
+  const handleWrenForesightReroll = async () => {
+    const res = await executeForesightReroll(roomCode);
+    if (res?.error) {
+      alert(res.error);
+    } else if (res?.diceRoll) {
+      setWrenPreviewRoll(res.diceRoll);
+    }
+  };
+
+  const handleWrenAcceptRoll = () => {
+    setWrenPreviewRoll(null);
+    handleRoll();
+  };
+
+  const handleArmDawn = async () => {
+    const res = await armGuardiansWard(roomCode);
+    if (res?.error) alert(res.error);
+  };
+
+  const handleArmSable = async () => {
+    const res = await armVanish(roomCode);
+    if (res?.error) alert(res.error);
+  };
+
+  const handleHalcyonSwiftStride = async (steps: number) => {
+    setShowSwiftStrideModal(false);
+    const res = await executeSwiftStride(roomCode, steps);
+    if (res?.error) alert(res.error);
   };
 
   const handleSendEmote = async (emote: string) => {
@@ -347,26 +411,37 @@ export default function GameplayClient({
             </span>
           </div>
 
-          {/* Player Held Cards */}
-          <div className="flex flex-col gap-2">
-            <span className="text-[11px] font-mono text-[#F2E9D8]/60">Hand Cards:</span>
-            {sortedPlayers.find((p) => p.userId === currentUserId)?.heldCards.length ? (
-              <div className="flex flex-wrap gap-2">
-                {sortedPlayers
-                  .find((p) => p.userId === currentUserId)
-                  ?.heldCards.map((cardId, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleUseCard(cardId)}
-                      className="px-3 py-1.5 bg-[#E8A33D]/10 hover:bg-[#E8A33D]/20 border border-[#E8A33D]/40 rounded text-xs font-mono text-[#E8A33D] flex items-center gap-1.5 cursor-pointer transition-colors active:scale-95 min-h-[36px]"
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      <span className="capitalize">{cardId}</span>
-                    </button>
-                  ))}
-              </div>
-            ) : (
-              <span className="text-xs font-mono text-[#F2E9D8]/40 italic">Tidak ada kartu di tangan</span>
+          {/* Hero Active Abilities Controls */}
+          <div className="flex flex-col gap-2 pt-2 border-t border-[#4B4A57]/20">
+            <span className="text-[11px] font-mono text-[#F2E9D8]/60">Hero Ability:</span>
+            {selfPlayer?.characterId === "dawn" && !selfPlayer.usedAbility && (
+              <button
+                onClick={handleArmDawn}
+                className="w-full py-2 bg-[#E8A33D]/20 hover:bg-[#E8A33D]/30 border border-[#E8A33D] rounded text-xs font-mono text-[#E8A33D] font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"
+              >
+                <Shield className="w-4 h-4" />
+                <span>{selfPlayer.usedAbility ? "Guardian's Ward (Used)" : "Aktifkan Guardian's Ward"}</span>
+              </button>
+            )}
+
+            {selfPlayer?.characterId === "sable" && !selfPlayer.usedAbility && (
+              <button
+                onClick={handleArmSable}
+                className="w-full py-2 bg-[#7C4DA8]/20 hover:bg-[#7C4DA8]/30 border border-[#7C4DA8] rounded text-xs font-mono text-purple-300 font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"
+              >
+                <Skull className="w-4 h-4" />
+                <span>Aktifkan Vanish (Kebal 1 Ronde)</span>
+              </button>
+            )}
+
+            {selfPlayer?.characterId === "halcyon" && !selfPlayer.usedAbility && isMyTurn && (
+              <button
+                onClick={() => setShowSwiftStrideModal(true)}
+                className="w-full py-2 bg-[#5FA35A]/20 hover:bg-[#5FA35A]/30 border border-[#5FA35A] rounded text-xs font-mono text-green-300 font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"
+              >
+                <ArrowUp className="w-4 h-4" />
+                <span>Swift Stride (Bonus Langkah)</span>
+              </button>
             )}
           </div>
         </div>
@@ -421,28 +496,63 @@ export default function GameplayClient({
 
           {/* Roll CTA Button */}
           {status === "IN_PROGRESS" && (
-            <button
-              onClick={handleRoll}
-              disabled={!isMyTurn || isRolling || isPendingRoll}
-              className={`w-full h-14 flex items-center justify-center gap-3 font-press-start text-xs tracking-wider rounded-md border-b-4 border-[#4B4A57] transition-all cursor-pointer shadow-lg ${
-                isMyTurn && !isRolling && !isPendingRoll
-                  ? "bg-[#E8A33D] hover:bg-[#F2B75C] text-[#1B1A1F]"
-                  : "bg-[#232129] border border-[#4B4A57]/30 text-[#F2E9D8]/20 cursor-not-allowed border-b-0"
-              }`}
-              style={{ touchAction: "manipulation" }}
-            >
-              {isPendingRoll || isRolling ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin text-[#1B1A1F]" />
-                  <span>MENGOKOK...</span>
-                </>
+            <>
+              {selfPlayer?.characterId === "wren" && !selfPlayer.usedAbility && isMyTurn ? (
+                wrenPreviewRoll ? (
+                  <div className="flex flex-col gap-2 w-full">
+                    <div className="text-center font-mono text-xs text-[#E8A33D] font-bold">
+                      Hasil Roll Preview: {wrenPreviewRoll}
+                    </div>
+                    <div className="flex gap-2 w-full">
+                      <button
+                        onClick={handleWrenAcceptRoll}
+                        className="flex-1 py-3 bg-[#5FA35A] hover:bg-[#72b86d] text-[#1B1A1F] font-press-start text-[10px] rounded cursor-pointer"
+                      >
+                        Terima
+                      </button>
+                      <button
+                        onClick={handleWrenForesightReroll}
+                        className="flex-1 py-3 bg-[#7C4DA8] hover:bg-[#905fc5] text-white font-press-start text-[10px] rounded cursor-pointer"
+                      >
+                        Reroll (Foresight)
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleWrenPreview}
+                    disabled={isRolling || isPendingRoll}
+                    className="w-full h-14 flex items-center justify-center gap-3 bg-[#E8A33D] hover:bg-[#F2B75C] text-[#1B1A1F] font-press-start text-xs rounded-md border-b-4 border-[#4B4A57] cursor-pointer shadow-lg"
+                  >
+                    <Dices className="w-4 h-4" />
+                    <span>PREVIEW ROLL (WREN)</span>
+                  </button>
+                )
               ) : (
-                <>
-                  <Dices className="w-4 h-4" />
-                  <span>KOCOK DADU</span>
-                </>
+                <button
+                  onClick={handleRoll}
+                  disabled={!isMyTurn || isRolling || isPendingRoll}
+                  className={`w-full h-14 flex items-center justify-center gap-3 font-press-start text-xs tracking-wider rounded-md border-b-4 border-[#4B4A57] transition-all cursor-pointer shadow-lg ${
+                    isMyTurn && !isRolling && !isPendingRoll
+                      ? "bg-[#E8A33D] hover:bg-[#F2B75C] text-[#1B1A1F]"
+                      : "bg-[#232129] border border-[#4B4A57]/30 text-[#F2E9D8]/20 cursor-not-allowed border-b-0"
+                  }`}
+                  style={{ touchAction: "manipulation" }}
+                >
+                  {isPendingRoll || isRolling ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-[#1B1A1F]" />
+                      <span>KOCOK DADU...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Dices className="w-4 h-4" />
+                      <span>KOCOK DADU</span>
+                    </>
+                  )}
+                </button>
               )}
-            </button>
+            </>
           )}
 
           {/* Rematch Button when FINISHED */}
@@ -495,32 +605,29 @@ export default function GameplayClient({
         </div>
       </div>
 
-      {/* Target Player Swap Card Selection Modal */}
-      {showSwapModal && (
+      {/* Halcyon Swift Stride Bonus Steps Modal */}
+      {showSwiftStrideModal && (
         <div className="fixed inset-0 bg-[#1B1A1F]/90 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
-          <div className="w-full max-w-sm bg-[#232129] border-2 border-[#E8A33D] rounded-xl p-6 flex flex-col gap-4 shadow-2xl">
+          <div className="w-full max-w-sm bg-[#232129] border-2 border-[#5FA35A] rounded-xl p-6 flex flex-col gap-4 shadow-2xl text-center">
             <div className="flex flex-col gap-1">
-              <span className="font-press-start text-xs text-[#E8A33D]">SWAP ACTION CARD</span>
-              <p className="text-xs text-[#F2E9D8]/70 font-mono">Pilih pemain lawan untuk bertukar posisi tile secara instan:</p>
+              <span className="font-press-start text-xs text-[#5FA35A]">SWIFT STRIDE (CENTAUR)</span>
+              <p className="text-xs text-[#F2E9D8]/70 font-mono">Pilih jumlah bonus tile melangkah tambahan:</p>
             </div>
 
-            <div className="flex flex-col gap-2">
-              {players
-                .filter((p) => p.userId !== currentUserId)
-                .map((p) => (
-                  <button
-                    key={p.userId}
-                    onClick={() => handleUseCard("swap", p.userId)}
-                    className="w-full p-3 bg-[#1B1A1F] hover:bg-[#E8A33D]/10 border border-[#4B4A57]/30 hover:border-[#E8A33D]/60 rounded text-xs font-mono text-left flex items-center justify-between text-[#F2E9D8] transition-colors cursor-pointer"
-                  >
-                    <span className="font-bold">{p.user.nickname || p.user.name}</span>
-                    <span className="text-[10px] text-[#5FA35A] font-press-start">TILE {p.position}</span>
-                  </button>
-                ))}
+            <div className="flex gap-3 justify-center">
+              {[1, 2, 3].map((steps) => (
+                <button
+                  key={steps}
+                  onClick={() => handleHalcyonSwiftStride(steps)}
+                  className="flex-1 py-3 bg-[#5FA35A]/20 hover:bg-[#5FA35A]/40 border border-[#5FA35A] text-[#5FA35A] font-press-start text-sm rounded cursor-pointer transition-colors"
+                >
+                  +{steps} Tile
+                </button>
+              ))}
             </div>
 
             <button
-              onClick={() => setShowSwapModal(false)}
+              onClick={() => setShowSwiftStrideModal(false)}
               className="mt-2 w-full py-2 bg-[#4B4A57]/20 hover:bg-[#4B4A57]/40 text-[#F2E9D8]/60 text-xs font-mono rounded border border-[#4B4A57]/30 transition-colors"
             >
               Batal

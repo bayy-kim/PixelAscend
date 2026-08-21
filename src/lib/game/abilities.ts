@@ -9,7 +9,11 @@ export interface PlayerState {
   usedAbility: boolean;
   isWinner: boolean;
   turnOrder: number; // added to support turn standings check inside engine
-  isUntargetable?: boolean; // Sable - Vanish
+  skipNextTurn?: boolean; // Creeping Fog
+  doubleDiceNextTurn?: boolean; // Swiftness Brew
+  guardiansWardArmed?: boolean; // Dawn
+  pendingDiceRoll?: number | null; // Wren
+  isUntargetable?: boolean; // Sable
 }
 
 export interface AbilityContext {

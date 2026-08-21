@@ -121,21 +121,26 @@ enum RoomStatus {
 }
 
 model RoomPlayer {
-  id              String    @id @default(cuid())
-  roomId          String
-  room            Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  userId          String
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  characterId     String
-  character       Character @relation(fields: [characterId], references: [id])
-  cosmeticVariant String    @default("default") // palette-swap id
-  turnOrder       Int
-  position        Int       @default(0) // tile index 0-100 (where 100 is win)
-  isReady         Boolean   @default(false)
-  heldCards       Json      @default("[]") // JSON array of Action Card ids
-  usedAbility     Boolean   @default(false) // whether character ability has been used (if limited to 1x/match)
-  isWinner        Boolean   @default(false)
-  joinedAt        DateTime  @default(now())
+  id                  String    @id @default(cuid())
+  roomId              String
+  room                Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId              String
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  characterId         String
+  character           Character @relation(fields: [characterId], references: [id])
+  cosmeticVariant     String    @default("default") // palette-swap id
+  turnOrder           Int
+  position            Int       @default(0) // tile index 0-100 (where 100 is win)
+  isReady             Boolean   @default(false)
+  heldCards           Json      @default("[]") // JSON array of Action Card ids
+  usedAbility         Boolean   @default(false) // whether character ability has been used (if limited to 1x/match)
+  skipNextTurn        Boolean   @default(false) // Creeping Fog: skip next turn
+  doubleDiceNextTurn  Boolean   @default(false) // Swiftness Brew: double dice next turn
+  guardiansWardArmed  Boolean   @default(false) // Dawn: Guardian's Ward active shield
+  pendingDiceRoll     Int?      // Wren: Foresight pending roll value
+  isUntargetable      Boolean   @default(false) // Sable: Vanish 1-round immunity
+  isWinner            Boolean   @default(false)
+  joinedAt            DateTime  @default(now())
 
   @@unique([roomId, characterId]) // no duplicate characters in a room
   @@unique([roomId, userId])      // user can join a room once

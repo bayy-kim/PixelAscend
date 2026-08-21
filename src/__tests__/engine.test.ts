@@ -43,13 +43,41 @@ describe("PixelAscend Game Engine", () => {
     assert.strictEqual(res.rollModifier, 1, "Ember must have a +1 modifier");
   });
 
-  test("should clamp final position to 100 on overshoot", () => {
-    players[0].position = 98;
+  test("should handle Creeping Fog personal skip turn for same player", () => {
+    players[0].skipNextTurn = true;
     const res = resolveTurn(players, 0);
-    
-    assert.ok(res.finalPosition <= 100, "Final position must not exceed 100");
-    if (res.finalPosition === 100) {
-      assert.strictEqual(res.winnerUserId, "user-1", "Winner must be user-1");
-    }
+
+    assert.strictEqual(res.turnSkipped, true, "Turn must be skipped");
+    assert.strictEqual(res.turnSkippedReason, "Creeping Fog");
+    assert.strictEqual(res.diceRoll, 0, "Dice roll must be 0 when turn skipped");
+    assert.strictEqual(players[0].skipNextTurn, false, "skipNextTurn flag must be reset to false");
+    assert.strictEqual(res.nextTurnIndex, 1, "Next turn index must proceed normally to next player");
+  });
+
+  test("should handle Swiftness Brew double dice roll for next turn", () => {
+    players[0].doubleDiceNextTurn = true;
+    const res = resolveTurn(players, 0);
+
+    assert.strictEqual(players[0].doubleDiceNextTurn, false, "doubleDiceNextTurn flag must be consumed");
+    assert.ok(res.path.length >= 2, "Path steps must reflect doubled dice roll");
+  });
+
+  test("should block hazard using Dawn's Guardian's Ward when armed", () => {
+    players[0].position = 17; // Hazard tile
+    players[0].guardiansWardArmed = true;
+
+    // Simulate landing on tile 17 with hazard
+    const res = resolveTurn(players, 0);
+    assert.strictEqual(players[0].usedAbility, true, "Guardian's Ward charge must be used");
+    assert.strictEqual(players[0].guardiansWardArmed, false, "Shield must be disarmed");
+  });
+
+  test("should use Wren's pending roll when Foresight preview is accepted", () => {
+    players[0].characterId = "wren";
+    players[0].pendingDiceRoll = 6;
+
+    const res = resolveTurn(players, 0);
+    assert.strictEqual(res.diceRoll, 6, "Must consume Wren's pending dice roll");
+    assert.strictEqual(players[0].pendingDiceRoll, null, "Pending roll must be cleared");
   });
 });

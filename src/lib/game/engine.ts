@@ -10,6 +10,8 @@ export interface TurnResolution {
   nextTurnIndex: number;
   winnerUserId: string | null;
   cardDrawn: string | null;
+  turnSkipped?: boolean;
+  turnSkippedReason?: string | null;
 }
 
 /**
@@ -26,11 +28,46 @@ export function resolveTurn(
     throw new Error("Pemain tidak ditemukan pada giliran ini.");
   }
 
+  // Check 1.1: Creeping Fog skip turn check at start of turn
+  if (activePlayer.skipNextTurn) {
+    activePlayer.skipNextTurn = false;
+    const nextTurnIndex = (currentTurnIndex + 1) % roomPlayers.length;
+    return {
+      diceRoll: 0,
+      rollModifier: 0,
+      path: [],
+      effectTriggered: null,
+      finalPosition: activePlayer.position,
+      nextTurnIndex,
+      winnerUserId: null,
+      cardDrawn: null,
+      turnSkipped: true,
+      turnSkippedReason: "Creeping Fog",
+    };
+  }
+
+  // Check 2.5: Reset Sable Vanish immunity if Sable's own turn comes around again
+  if (activePlayer.characterId === "sable" && activePlayer.isUntargetable) {
+    activePlayer.isUntargetable = false;
+  }
+
   const startPos = activePlayer.position;
   
   // 1. Roll dice: crypto-safe random 1-6
-  const diceRoll = Math.floor(Math.random() * 6) + 1;
+  let diceRoll = Math.floor(Math.random() * 6) + 1;
   let rollModifier = 0;
+
+  // Wren Foresight check: if pendingDiceRoll is present, use it
+  if (activePlayer.characterId === "wren" && activePlayer.pendingDiceRoll) {
+    diceRoll = activePlayer.pendingDiceRoll;
+    activePlayer.pendingDiceRoll = null; // consume pending roll
+  }
+
+  // Swiftness Brew (1.2): double raw dice value first
+  if (activePlayer.doubleDiceNextTurn) {
+    diceRoll = diceRoll * 2;
+    activePlayer.doubleDiceNextTurn = false;
+  }
 
   // Ember's passive: Scorch Rush (dadu always +1)
   if (activePlayer.characterId === "ember") {
@@ -90,9 +127,16 @@ export function resolveTurn(
         finalPos = resolvedEffect.targetTile;
         path.push(finalPos); // add boost jump destination to path
       } else if (resolvedEffect.type === "hazard" && resolvedEffect.targetTile !== undefined) {
-        // Safe check: does active player hold Aegis card?
-        const hasAegis = activePlayer.heldCards.includes("aegis");
-        if (hasAegis) {
+        // Safe check: Dawn Guardian's Ward or Aegis card
+        if (activePlayer.characterId === "dawn" && activePlayer.guardiansWardArmed) {
+          activePlayer.guardiansWardArmed = false;
+          activePlayer.usedAbility = true;
+          effectTriggered = {
+            type: "event",
+            name: "Guardian's Ward",
+            description: "Guardian's Ward memblokir Shadow Vine!",
+          };
+        } else if (activePlayer.heldCards.includes("aegis")) {
           // Consume Aegis automatically to block hazard
           activePlayer.heldCards = activePlayer.heldCards.filter((c) => c !== "aegis");
           effectTriggered = {
@@ -104,9 +148,15 @@ export function resolveTurn(
           finalPos = resolvedEffect.targetTile;
           path.push(finalPos); // add hazard drop destination to path
         }
-      } else if (resolvedEffect.type === "event" && resolvedEffect.magnitude) {
-        finalPos = Math.max(1, Math.min(100, finalPos + resolvedEffect.magnitude));
-        path.push(finalPos);
+      } else if (resolvedEffect.type === "event") {
+        if (resolvedEffect.name === "Creeping Fog") {
+          activePlayer.skipNextTurn = true; // Mark player to skip THEIR OWN next turn
+        } else if (resolvedEffect.name === "Swiftness Brew") {
+          activePlayer.doubleDiceNextTurn = true; // Mark player to double THEIR OWN next dice
+        } else if (resolvedEffect.magnitude) {
+          finalPos = Math.max(1, Math.min(100, finalPos + resolvedEffect.magnitude));
+          path.push(finalPos);
+        }
       } else if (resolvedEffect.type === "powerup") {
         // Draw random Action Card
         const randomIdx = Math.floor(Math.random() * activeCardsPool.length);
@@ -127,13 +177,7 @@ export function resolveTurn(
   }
 
   // 5. Determine next turn index
-  let nextTurnIndex = (currentTurnIndex + 1) % roomPlayers.length;
-
-  // Handle Creeping Fog event (skips next turn)
-  if (effectTriggered?.name === "Creeping Fog") {
-    // skip next turn simply by skipping their index
-    nextTurnIndex = (nextTurnIndex + 1) % roomPlayers.length;
-  }
+  const nextTurnIndex = (currentTurnIndex + 1) % roomPlayers.length;
 
   return {
     diceRoll,
