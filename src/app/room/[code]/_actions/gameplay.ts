@@ -219,6 +219,8 @@ export async function executeActionCard(
   const updatedCards = heldCards.filter((c) => c !== cardId);
   let announcementMessage = "";
 
+  let swappedPositions: {userId: string; position: number}[] | undefined;
+
   if (cardId === "blink") {
     const newPos = Math.min(100, activePlayer.position + 5);
     await db.roomPlayer.update({
@@ -226,6 +228,7 @@ export async function executeActionCard(
       data: { position: newPos, heldCards: updatedCards },
     });
     announcementMessage = `${session.user.name} menggunakan Blink! Teleport maju +5 tile.`;
+    swappedPositions = [{ userId: activePlayer.userId, position: newPos }];
   } else if (cardId === "swap" && targetUserId) {
     const targetPlayer = room.players.find((p: any) => p.userId === targetUserId);
     if (!targetPlayer) return { error: "Target pemain tidak ditemukan." };
@@ -244,6 +247,7 @@ export async function executeActionCard(
         data: { position: targetPos, heldCards: updatedCards },
       });
       announcementMessage = `Retaliation! Serangan Swap ${session.user.name} dibalikkan oleh Brack!`;
+      swappedPositions = [{ userId: activePlayer.userId, position: targetPos }];
     } else {
       const myPos = activePlayer.position;
       const targetPos = targetPlayer.position;
@@ -259,6 +263,10 @@ export async function executeActionCard(
       });
 
       announcementMessage = `${session.user.name} menukar posisi dengan ${targetPlayer.userId}!`;
+      swappedPositions = [
+        { userId: activePlayer.userId, position: targetPos },
+        { userId: targetPlayer.userId, position: myPos }
+      ];
     }
   } else {
     // Aegis / Mirror Ward (passive held buff)
@@ -273,6 +281,7 @@ export async function executeActionCard(
     userId: session.user.id,
     cardId,
     announcement: announcementMessage,
+    swappedPositions,
   });
 
   revalidatePath(`/room/${roomCode}/play`);

@@ -158,10 +158,31 @@ export default function GameplayClient({
       }, 3000);
     });
 
-    // Real-time card used handler
     channel.bind("card-used", (data: any) => {
       sounds.playBoost();
       triggerHaptic("medium");
+      
+      // Optimitically update held cards or positions if present in event
+      if (data.userId && data.cardId) {
+        setPlayers((prev) => 
+          prev.map((p) => {
+            if (p.userId === data.userId) {
+              return { ...p, heldCards: p.heldCards.filter((c) => c !== data.cardId) };
+            }
+            return p;
+          })
+        );
+      }
+      if (data.swappedPositions) {
+        setPlayers((prev) => 
+          prev.map((p) => {
+            const swapInfo = data.swappedPositions.find((sp: any) => sp.userId === p.userId);
+            if (swapInfo) return { ...p, position: swapInfo.position };
+            return p;
+          })
+        );
+      }
+
       router.refresh();
     });
 
@@ -182,8 +203,17 @@ export default function GameplayClient({
       setTimeout(() => {
         setIsRolling(false);
         sounds.playStep();
+
+        // 2. Update player position optimistically in local state to prevent loading flash
+        setPlayers((prev) =>
+          prev.map((p) =>
+            p.userId === data.userId
+              ? { ...p, position: data.finalPosition, heldCards: data.cardDrawn ? [...p.heldCards, data.cardDrawn] : p.heldCards }
+              : p
+          )
+        );
         
-        // 2. Refresh database data model locally
+        // Refresh server components lazily in the background
         router.refresh();
 
         // 3. Play cutscenes based on target tile effect triggered
