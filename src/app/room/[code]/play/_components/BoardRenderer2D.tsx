@@ -85,6 +85,8 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
       y1: number;
       x2: number;
       y2: number;
+      angle: number;
+      length: number;
     }> = [];
 
     const tilePosMap = new Map<number, { row: number; col: number }>();
@@ -96,14 +98,23 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
         const to = tilePosMap.get(eff.targetTile);
         if (from && to) {
           // Center of tiles in percentage (0-100%)
+          const x1 = from.col * 10 + 5;
+          const y1 = from.row * 10 + 5;
+          const x2 = to.col * 10 + 5;
+          const y2 = to.row * 10 + 5;
+          
+          // Math for rotating the repeating background image element
+          const deltaX = x2 - x1;
+          const deltaY = y2 - y1;
+          const length = Math.hypot(deltaX, deltaY); // percentage distance
+          const angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+
           list.push({
             fromTile: eff.tileNumber,
             toTile: eff.targetTile,
             type: eff.type,
-            x1: from.col * 10 + 5,
-            y1: from.row * 10 + 5,
-            x2: to.col * 10 + 5,
-            y2: to.row * 10 + 5,
+            x1, y1, x2, y2,
+            length, angle
           });
         }
       }
@@ -122,49 +133,40 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
 
       {/* Grid Layout (10x10) */}
       <div className="relative w-full h-full grid grid-cols-10 grid-rows-10 gap-0.5">
-        {/* SVG Connector Lines for Ladders & Vines */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none z-10 overflow-visible">
-          <defs>
-            <marker id="arrow-hazard" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#A855F7" />
-            </marker>
-            <marker id="arrow-boost" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#22C55E" />
-            </marker>
-          </defs>
+        
+        {/* Pixel Art Connectors (Ladder & Vine Background Textures) */}
+        {connections.map((conn, idx) => {
+          const isBoost = conn.type === "boost";
+          const imageUrl = isBoost ? "url('/elements/tangga.png')" : "url('/elements/ular.png')";
+          // Set thickness: 24px wide for ladder, 16px wide for vine.
+          const thickness = isBoost ? "24px" : "16px";
+          // Add drop shadow using CSS filter
+          const filterStyle = isBoost ? "drop-shadow(2px 2px 2px rgba(0,0,0,0.8))" : "drop-shadow(2px 2px 2px rgba(0,0,0,0.8)) hue-rotate(-20deg)";
 
-          {connections.map((conn, idx) => {
-            const isBoost = conn.type === "boost";
-            return (
-              <g key={idx}>
-                {/* Outer shadow/glow line */}
-                <line
-                  x1={`${conn.x1}%`}
-                  y1={`${conn.y1}%`}
-                  x2={`${conn.x2}%`}
-                  y2={`${conn.y2}%`}
-                  stroke="#1B1A1F"
-                  strokeWidth="6"
-                  strokeLinecap="round"
-                  opacity="0.8"
-                />
-                {/* Main connector line */}
-                <line
-                  x1={`${conn.x1}%`}
-                  y1={`${conn.y1}%`}
-                  x2={`${conn.x2}%`}
-                  y2={`${conn.y2}%`}
-                  stroke={isBoost ? "#22C55E" : "#A855F7"}
-                  strokeWidth="3.5"
-                  strokeDasharray={isBoost ? "none" : "5 3"}
-                  strokeLinecap="round"
-                  markerEnd={isBoost ? "url(#arrow-boost)" : "url(#arrow-hazard)"}
-                  opacity="0.95"
-                />
-              </g>
-            );
-          })}
-        </svg>
+          return (
+            <div
+              key={`conn-${idx}`}
+              className="absolute pointer-events-none z-10 pixelated"
+              style={{
+                // Position centered on origin tile
+                left: `calc(${conn.x1}% - ${parseFloat(thickness)/2}px)`,
+                top: `calc(${conn.y1}% - ${parseFloat(thickness)/2}px)`,
+                // Expand horizontally based on computed hypotenuse length
+                width: `${conn.length}%`, 
+                height: thickness,
+                // Rotate around the left-center origin point
+                transformOrigin: "left center",
+                transform: `rotate(${conn.angle}deg)`,
+                // Texture filling
+                backgroundImage: imageUrl,
+                backgroundRepeat: "repeat-x",
+                backgroundSize: "contain",
+                filter: filterStyle,
+                opacity: 0.9,
+              }}
+            />
+          );
+        })}
 
         {tileGrid.map(({ tileNumber }) => {
           const effect = effectMap.get(tileNumber);

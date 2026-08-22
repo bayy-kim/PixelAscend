@@ -673,4 +673,67 @@ const frozenBuffer = generatePNG(320, 320, (x, y) => {
 });
 fs.writeFileSync(path.join(frozenDir, 'board.png'), frozenBuffer);
 
-console.log('Anatomically precise 256x256 Chibi Pixel Sprites generated successfully!');
+// Generate Board Elements: Ladder (Tangga) & Vine (Ular)
+const elementsDir = path.join(process.cwd(), 'public', 'elements');
+if (!fs.existsSync(elementsDir)) {
+  fs.mkdirSync(elementsDir, { recursive: true });
+}
+
+// 1. Ladder Pattern (32x32) - Repeatable horizontally (since we'll rotate the div)
+const ladderBuffer = generatePNG(32, 32, (x, y) => {
+  const WOOD_DARK: [number, number, number, number] = [90, 60, 35, 255];
+  const WOOD_LIGHT: [number, number, number, number] = [130, 85, 45, 255];
+  const SHADOW: [number, number, number, number] = [0, 0, 0, 150];
+
+  // Draw horizontally so background-repeat: repeat-x works perfectly when rotated
+  // Rails (top and bottom edges)
+  if (y >= 4 && y <= 7) return WOOD_DARK; // Top rail
+  if (y >= 24 && y <= 27) return WOOD_DARK; // Bottom rail
+  
+  // Shadow under rails
+  if (y === 8 || y === 28) return SHADOW;
+
+  // Rungs (vertical steps bridging the rails)
+  // Repeating pattern every 16 pixels
+  if (x % 16 >= 6 && x % 16 <= 9 && y > 7 && y < 24) {
+    if (x % 16 === 6 || x % 16 === 9) return WOOD_DARK; // Rung edge
+    return WOOD_LIGHT; // Rung center
+  }
+
+  // Shadow under rungs
+  if (x % 16 >= 10 && x % 16 <= 11 && y > 7 && y < 24) {
+    return SHADOW;
+  }
+
+  return [0, 0, 0, 0];
+});
+fs.writeFileSync(path.join(elementsDir, 'tangga.png'), ladderBuffer);
+
+// 2. Shadow Vine / Snake Pattern (32x32) - Repeatable horizontally
+const vineBuffer = generatePNG(32, 32, (x, y) => {
+  const VINE_DARK: [number, number, number, number] = [76, 29, 149, 255]; // Deep purple
+  const VINE_LIGHT: [number, number, number, number] = [168, 85, 247, 255]; // Bright purple
+  const OUTLINE: [number, number, number, number] = [20, 18, 26, 255];
+  
+  // Create a wavy sine wave pattern
+  // Amplitude = 6, Period = 32
+  const waveCenterY = 16;
+  const waveOffset = Math.sin((x / 32) * Math.PI * 2) * 6;
+  const targetY = waveCenterY + waveOffset;
+
+  // Thickness of the vine is ~8 pixels
+  const dist = Math.abs(y - targetY);
+  
+  if (dist <= 4) {
+    if (dist > 3) return OUTLINE; // Outer black edge
+    if (y > targetY) return VINE_DARK; // Shadow side
+    // Thorns/Scales pattern
+    if (x % 8 >= 2 && x % 8 <= 3 && y < targetY - 1) return OUTLINE;
+    return VINE_LIGHT; // Highlight side
+  }
+
+  return [0, 0, 0, 0];
+});
+fs.writeFileSync(path.join(elementsDir, 'ular.png'), vineBuffer);
+
+console.log('Anatomically precise 256x256 Chibi Pixel Sprites, Theme Boards & Board Elements (Tangga & Ular) generated successfully!');
