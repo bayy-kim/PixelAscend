@@ -65,6 +65,7 @@ export default function GameplayClient({
   const [modifierValue, setModifierValue] = useState<number>(0);
   const [isMuted, setIsMuted] = useState(false);
   const [turnTimer, setTurnTimer] = useState<number>(15);
+  const [turnActionCounter, setTurnActionCounter] = useState<number>(0);
   const [activeEmotes, setActiveEmotes] = useState<ActiveEmote[]>([]);
   const [showSwapModal, setShowSwapModal] = useState(false);
   // Foresight state for Wren
@@ -115,7 +116,7 @@ export default function GameplayClient({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [turnIndex, status, isMyTurn]);
+  }, [turnIndex, turnActionCounter, status, isMyTurn]);
 
   // CPU Computer Automatic Turn Handler (If active turn player is CPU, Host triggers roll automatically after 1.2s delay)
   const isHost = currentUserId === sortedPlayers[0]?.userId;
@@ -132,7 +133,7 @@ export default function GameplayClient({
     }, 1200);
 
     return () => clearTimeout(timer);
-  }, [turnIndex, status, isCpuTurn, isHost, isRolling, isPendingRoll, roomCode]);
+  }, [turnIndex, turnActionCounter, status, isCpuTurn, isHost, isRolling, isPendingRoll, roomCode]);
 
   useEffect(() => {
     const channelName = `presence-room-${roomCode}`;
@@ -225,8 +226,9 @@ export default function GameplayClient({
           setTimeout(() => setActiveCutscene(null), 2000);
         }
 
-        // 5. Update local state turns
+        // 5. Update local state turns and trigger auto-roll counters
         setTurnIndex(data.nextTurnIndex);
+        setTurnActionCounter((prev) => prev + 1);
         if (data.winnerUserId) {
           setStatus("FINISHED");
           sounds.playVictory();

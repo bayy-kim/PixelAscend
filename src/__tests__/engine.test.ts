@@ -72,16 +72,42 @@ describe("PixelAscend Game Engine", () => {
     assert.strictEqual(players[0].guardiansWardArmed, false, "Shield must be disarmed");
   });
 
-  test("should bounce back when overshooting Tile 100", () => {
-    players[0].position = 98;
-    // Force a roll of 5 by setting pending roll or testing calculation
+  test("should bounce back properly when overshooting Tile 100", () => {
+    // Start tile 97, dadu 5 → finalPos harus 98
+    players[0].position = 97;
     players[0].characterId = "wren";
     players[0].pendingDiceRoll = 5;
+    let res = resolveTurn(players, 0);
+    assert.strictEqual(res.finalPosition, 98);
+    assert.strictEqual(res.winnerUserId, null);
 
-    const res = resolveTurn(players, 0);
-    // 98 + 5 = 103 -> Bounce back: 100 - 3 = Tile 97
-    assert.strictEqual(res.finalPosition, 97, "Player must bounce back from 100 when overshooting");
-    assert.strictEqual(res.winnerUserId, null, "Overshooting must not grant victory");
+    // Start tile 98, dadu 3 → finalPos harus 99
+    players[0].position = 98;
+    players[0].pendingDiceRoll = 3;
+    res = resolveTurn(players, 0);
+    assert.strictEqual(res.finalPosition, 99);
+
+    // Start tile 95, dadu 8 (simulate roll + modifier) → finalPos harus 97
+    players[0].position = 95;
+    players[0].characterId = "ember"; // Scorch Rush +1
+    players[0].pendingDiceRoll = null; // We use normal roll
+    // Temporarily mock Math.random to return 7 (dadu 7 -> +1 = 8)
+    const originalRandom = Math.random;
+    Math.random = () => 0.999; // Math.floor(0.999 * 6) + 1 = 6. Plus 1 from Ember = 7 steps. Wait, dice max is 6.
+    Math.random = () => 0.999; // returns 6
+    // If ember rolls 6, steps = 6 + 1 = 7. Let's use position 96 to test 7 steps -> 97.
+    players[0].position = 96;
+    res = resolveTurn(players, 0);
+    Math.random = originalRandom;
+    assert.strictEqual(res.finalPosition, 97);
+
+    // Start tile 97, dadu 3 (pas tepat ke 100) → finalPos harus 100 DAN terdeteksi menang
+    players[0].position = 97;
+    players[0].characterId = "wren";
+    players[0].pendingDiceRoll = 3;
+    res = resolveTurn(players, 0);
+    assert.strictEqual(res.finalPosition, 100);
+    assert.strictEqual(res.winnerUserId, "user-1");
   });
 
   test("should reset player to Tile 1 on 3 consecutive 6s penalty", () => {

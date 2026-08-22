@@ -116,13 +116,12 @@ export function resolveTurn(
   // Calculate intermediate paths & Bounce Back logic for Tile 100
   const path: number[] = [];
   let tempPos = startPos;
+  let direction: 1 | -1 = 1;
 
   for (let i = 1; i <= steps; i++) {
-    if (tempPos < 100) {
-      tempPos += 1;
-    } else {
-      // Bounce back backwards if overshooting 100
-      tempPos -= 1;
+    tempPos += direction;
+    if (tempPos === 100) {
+      direction = -1; // sekali menyentuh 100, arah berbalik permanen untuk sisa langkah
     }
     path.push(tempPos);
   }
