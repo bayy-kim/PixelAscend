@@ -323,19 +323,27 @@ export default function LobbyClient({
         {activeCharData && (
           <div className="bg-[#1B1A1F] rounded p-6 border border-[#4B4A57]/20 flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row items-center gap-6">
-              {/* Live MP4 Video Preview Badge */}
+              {/* Live MP4 Video Preview Badge with POV Poster Fallback */}
               <div className="relative group cursor-pointer" onClick={() => setShowcaseChar(activeCharData)}>
-                <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-[#E8A33D] bg-black shadow-lg">
+                <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-[#E8A33D] bg-[#1B1A1F] shadow-lg relative">
+                  <Image
+                    src={getCharacterMedia(activeCharData.id).povImage}
+                    alt={activeCharData.name}
+                    fill
+                    className="object-cover opacity-90"
+                    unoptimized
+                  />
                   <video
                     src={getCharacterMedia(activeCharData.id).walkVideo}
+                    poster={getCharacterMedia(activeCharData.id).povImage}
                     autoPlay
                     loop
                     muted
                     playsInline
-                    className="w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-cover z-10 opacity-90 group-hover:opacity-100 transition-opacity"
                   />
                 </div>
-                <div className="absolute -bottom-2 inset-x-0 flex justify-center">
+                <div className="absolute -bottom-2 inset-x-0 flex justify-center z-20">
                   <span className="bg-[#E8A33D] text-[#1B1A1F] text-[8px] font-bold font-mono px-2 py-0.5 rounded-full uppercase flex items-center gap-1 shadow">
                     <Film className="w-2.5 h-2.5" /> MP4 SHOWCASE
                   </span>

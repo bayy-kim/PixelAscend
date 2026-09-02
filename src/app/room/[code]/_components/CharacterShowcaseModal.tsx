@@ -60,6 +60,7 @@ export const CharacterShowcaseModal: React.FC<CharacterShowcaseModalProps> = ({
             {activeTab === "video" ? (
               <video
                 src={media.walkVideo}
+                poster={media.povImage}
                 autoPlay
                 loop
                 muted

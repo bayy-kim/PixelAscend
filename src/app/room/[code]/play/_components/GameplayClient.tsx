@@ -711,6 +711,7 @@ export default function GameplayClient({
                   <div className="relative w-48 h-48 rounded-xl overflow-hidden border-4 border-[#E8A33D] bg-black shadow-2xl">
                     <video
                       src={winnerMedia.walkVideo}
+                      poster={winnerMedia.povImage}
                       autoPlay
                       loop
                       muted
