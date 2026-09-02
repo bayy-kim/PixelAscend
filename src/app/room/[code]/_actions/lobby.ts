@@ -155,6 +155,9 @@ export async function joinLobby(roomCode: string) {
         userId: session.user.id,
         name: session.user.name,
         nickname: session.user.nickname,
+        characterId: availableChar.id,
+        cosmeticVariant: "default",
+        avatarUrl: (session.user as any).avatarUrl || session.user.image,
       });
     } catch (pusherErr) {
       console.warn("Pusher trigger warning:", pusherErr);
@@ -326,20 +329,39 @@ export async function toggleReady(roomCode: string, isReady: boolean) {
   try {
     const room = await db.room.findUnique({
       where: { code: roomCode },
+      include: { players: true },
     });
     if (!room || room.status !== "LOBBY") {
       return { error: "Lobby tidak aktif." };
     }
 
-    await db.roomPlayer.update({
-      where: {
-        roomId_userId: {
+    const existingPlayer = room.players.find((p: any) => p.userId === session.user.id);
+    if (!existingPlayer) {
+      const takenCharIds = room.players.map((p: any) => p.characterId);
+      const availableChar = await db.character.findFirst({
+        where: {
+          isEnabled: true,
+          id: { notIn: takenCharIds.length ? takenCharIds : [""] },
+        },
+      });
+
+      await db.roomPlayer.create({
+        data: {
           roomId: room.id,
           userId: session.user.id,
+          characterId: availableChar?.id || "dawn",
+          turnOrder: room.players.length,
+          position: 0,
+          isReady: isReady,
+          heldCards: [],
         },
-      },
-      data: { isReady },
-    });
+      });
+    } else {
+      await db.roomPlayer.update({
+        where: { id: existingPlayer.id },
+        data: { isReady },
+      });
+    }
 
     // Notify other players
     try {
@@ -354,8 +376,50 @@ export async function toggleReady(roomCode: string, isReady: boolean) {
     revalidatePath(`/room/${roomCode}`);
     return { success: true };
   } catch (err) {
-    console.error(err);
+    console.error("toggleReady error:", err);
     return { error: "Gagal memperbarui status ready." };
+  }
+}
+
+export async function getRoomPlayers(roomCode: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    const room = await db.room.findUnique({
+      where: { code: roomCode },
+      include: {
+        players: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                nickname: true,
+                image: true,
+                avatarUrl: true,
+              },
+            },
+          },
+          orderBy: { joinedAt: "asc" },
+        },
+      },
+    });
+
+    if (!room) {
+      return { error: "Room tidak ditemukan." };
+    }
+
+    return {
+      success: true,
+      players: room.players,
+      status: room.status,
+      hostUserId: room.hostUserId,
+    };
+  } catch (err) {
+    console.error("getRoomPlayers error:", err);
+    return { error: "Gagal mengambil data pemain." };
   }
 }
 

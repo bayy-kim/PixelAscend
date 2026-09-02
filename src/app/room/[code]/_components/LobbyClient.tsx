@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { pusherClient } from "@/lib/pusher-client";
-import { selectCharacterAndPalette, toggleReady, startGame, leaveLobby, kickPlayer, addCpuPlayer } from "../_actions/lobby";
+import { selectCharacterAndPalette, toggleReady, startGame, leaveLobby, kickPlayer, addCpuPlayer, getRoomPlayers } from "../_actions/lobby";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { User, Check, Play, LogOut, Copy, Share2, CheckCheck, UserX, Bot, Loader2, Eye, Film } from "lucide-react";
@@ -73,6 +73,17 @@ export default function LobbyClient({
     }
   }, [players, currentUserId]);
 
+  const syncFreshPlayers = async () => {
+    try {
+      const res = await getRoomPlayers(roomCode);
+      if (res?.success && Array.isArray(res.players)) {
+        setPlayers(res.players as any);
+      }
+    } catch (err) {
+      console.warn("syncFreshPlayers warning:", err);
+    }
+  };
+
   useEffect(() => {
     const channelName = `presence-room-${roomCode}`;
     
@@ -93,25 +104,27 @@ export default function LobbyClient({
             {
               id: data.userId,
               userId: data.userId,
-              characterId: "dawn",
-              cosmeticVariant: "default",
+              characterId: data.characterId || "dawn",
+              cosmeticVariant: data.cosmeticVariant || "default",
               isReady: data.userId.startsWith("cpu_"),
               user: {
                 name: data.name,
                 nickname: data.nickname || data.name,
-                image: null,
-                avatarUrl: null,
+                image: data.avatarUrl || null,
+                avatarUrl: data.avatarUrl || null,
               },
             },
           ];
         });
       }
+      syncFreshPlayers();
     });
 
     channel.bind("player-left", (data: any) => {
       if (data?.userId) {
         setPlayers((prev) => prev.filter((p) => p.userId !== data.userId));
       }
+      syncFreshPlayers();
     });
 
     channel.bind("player-picked-character", (data: any) => {
@@ -124,6 +137,7 @@ export default function LobbyClient({
           )
         );
       }
+      syncFreshPlayers();
     });
 
     channel.bind("player-ready", (data: any) => {
@@ -132,16 +146,18 @@ export default function LobbyClient({
           prev.map((p) => (p.userId === data.userId ? { ...p, isReady: data.isReady } : p))
         );
       }
+      syncFreshPlayers();
     });
 
     channel.bind("game-started", () => {
       router.push(`/room/${roomCode}/play`);
     });
 
-    // Fallback automatic background refresh every 3 seconds so manual refresh is NEVER required
+    // Initial sync and fast background interval every 2 seconds
+    syncFreshPlayers();
     const syncInterval = setInterval(() => {
-      router.refresh();
-    }, 3000);
+      syncFreshPlayers();
+    }, 2000);
 
     return () => {
       pusherClient.unsubscribe(channelName);
@@ -167,16 +183,31 @@ export default function LobbyClient({
           setSelectedChar(selfPlayer.characterId);
           setSelectedPalette(selfPlayer.cosmeticVariant);
         }
+      } else {
+        syncFreshPlayers();
       }
     });
   };
 
   const handleReadyToggle = () => {
     setError(null);
+    const nextReady = !isReady;
+
+    // Instant 0ms Optimistic UI local feedback
+    setPlayers((prev) =>
+      prev.map((p) => (p.userId === currentUserId ? { ...p, isReady: nextReady } : p))
+    );
+
     startReadyTransition(async () => {
-      const res = await toggleReady(roomCode, !isReady);
+      const res = await toggleReady(roomCode, nextReady);
       if (res?.error) {
         setError(res.error);
+        // Revert optimistic update on server error
+        setPlayers((prev) =>
+          prev.map((p) => (p.userId === currentUserId ? { ...p, isReady: isReady } : p))
+        );
+      } else {
+        syncFreshPlayers();
       }
     });
   };
