@@ -109,9 +109,10 @@ export default async function RoomLobbyPage({ params }: PageProps) {
             </span>
           </div>
 
-          <span className="font-press-start text-[10px] text-[#E8A33D]">
-            BOARD: {room.themeId.replace("-", " ").toUpperCase()}
-          </span>
+          <div className="flex items-center gap-1.5 px-3 py-1 bg-[#E8A33D]/10 border border-[#E8A33D]/30 rounded-full font-press-start text-[9px] text-[#E8A33D] shadow-sm">
+            <span>{room.themeId === "frozen-peaks" ? "❄️" : "🌲"}</span>
+            <span>{room.themeId === "frozen-peaks" ? "FROZEN PEAKS" : "WANDERER'S PATH"}</span>
+          </div>
         </div>
       </header>
 

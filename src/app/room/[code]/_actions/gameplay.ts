@@ -488,6 +488,41 @@ export async function executeCpuTurn(roomCode: string) {
       return { error: "Saat ini bukan giliran CPU." };
     }
 
+    // Smart AI Decision Engine: Pre-turn Card & Skill Execution for CPU Bot
+    const cpuCards = Array.isArray(activePlayer.heldCards) ? (activePlayer.heldCards as string[]) : [];
+
+    // 1. Smart Ability: Dawn Guardian's Ward auto-arm
+    if (activePlayer.characterId === "dawn" && !activePlayer.usedAbility && !activePlayer.guardiansWardArmed) {
+      activePlayer.guardiansWardArmed = true;
+      await pusherServer.trigger(`presence-room-${roomCode}`, "card-used", {
+        userId: activePlayer.userId,
+        announcement: `🤖 CPU Bot mengaktifkan perisai Guardian's Ward!`,
+      });
+    }
+
+    // 2. Smart Ability: Sable Vanish auto-arm
+    if (activePlayer.characterId === "sable" && !activePlayer.usedAbility && !activePlayer.isUntargetable) {
+      activePlayer.isUntargetable = true;
+      activePlayer.usedAbility = true;
+      await pusherServer.trigger(`presence-room-${roomCode}`, "card-used", {
+        userId: activePlayer.userId,
+        announcement: `🤖 CPU Bot mengaktifkan skill Vanish!`,
+      });
+    }
+
+    // 3. Smart Action Card: Blink (+5 tiles) if near mid/late game
+    if (cpuCards.includes("blink") && activePlayer.position >= 40) {
+      const newPos = Math.min(100, activePlayer.position + 5);
+      activePlayer.position = newPos;
+      activePlayer.heldCards = cpuCards.filter((c) => c !== "blink");
+      await pusherServer.trigger(`presence-room-${roomCode}`, "card-used", {
+        userId: activePlayer.userId,
+        cardId: "blink",
+        announcement: `🤖 CPU Bot menggunakan kartu Blink! Teleport +5 tile.`,
+        swappedPositions: [{ userId: activePlayer.userId, position: newPos }],
+      });
+    }
+
     const mappedPlayers: PlayerState[] = room.players.map((p: any) => ({
       userId: p.userId,
       characterId: p.characterId,

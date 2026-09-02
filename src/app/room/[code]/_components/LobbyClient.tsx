@@ -371,24 +371,38 @@ export default function LobbyClient({
               </div>
             </div>
 
-            {/* Customization: Palette Swapper (2D CSS Filters representation mapping) */}
-            <div className="flex flex-col gap-3 pt-4 border-t border-[#4B4A57]/15">
-              <span className="text-xs font-press-start text-[#F2E9D8]/50">Kustomisasi Outfit Varian</span>
-              <div className="flex flex-wrap gap-2">
-                {palettes.map((palette) => (
-                  <button
-                    key={palette}
-                    onClick={() => handlePickCharacter(selectedChar, palette)}
-                    disabled={isReady}
-                    className={`h-10 px-3.5 rounded text-[10px] font-press-start border transition-all uppercase cursor-pointer min-h-[44px] ${
-                      selectedPalette === palette
-                        ? "border-[#E8A33D] bg-[#E8A33D]/10 text-[#E8A33D]"
-                        : "border-[#4B4A57]/30 bg-transparent text-[#F2E9D8]/60 hover:text-white"
-                    }`}
-                  >
-                    {palette}
-                  </button>
-                ))}
+            {/* Customization: Color Swatch Palette Swapper */}
+            <div className="flex flex-col gap-3 pt-4 border-t border-[#4B4A57]/20">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-press-start text-[#E8A33D]">Varian Warna Outfit</span>
+                <span className="text-[10px] font-mono text-[#F2E9D8]/50 uppercase">Aktif: {selectedPalette}</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { id: "default", label: "Default", color: "#E8A33D", bgClass: "bg-[#E8A33D]" },
+                  { id: "crimson", label: "Crimson Red", color: "#C24A4A", bgClass: "bg-[#C24A4A]" },
+                  { id: "moss", label: "Moss Green", color: "#5FA35A", bgClass: "bg-[#5FA35A]" },
+                  { id: "azure", label: "Azure Blue", color: "#3DA8E8", bgClass: "bg-[#3DA8E8]" },
+                ].map((p) => {
+                  const isSelected = selectedPalette === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => handlePickCharacter(selectedChar, p.id)}
+                      disabled={isReady}
+                      className={`flex items-center gap-2.5 p-2.5 rounded-lg border text-xs font-mono transition-all cursor-pointer min-h-[44px] ${
+                        isSelected
+                          ? "border-[#E8A33D] bg-[#E8A33D]/15 text-white shadow-[0_0_10px_rgba(232,163,61,0.3)]"
+                          : "border-[#4B4A57]/30 bg-[#232129] text-[#F2E9D8]/60 hover:border-[#4B4A57] hover:text-white"
+                      }`}
+                    >
+                      <span className={`w-4 h-4 rounded-full ${p.bgClass} shrink-0 border border-black/40 shadow-sm`} />
+                      <span className="truncate font-bold">{p.label}</span>
+                      {isSelected && <Check className="w-3.5 h-3.5 ml-auto text-[#E8A33D]" />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

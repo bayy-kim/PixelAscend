@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { PixelSprite, Direction } from "@/app/_components/PixelSprite";
 import { TileEffect } from "@/lib/game/board";
 
@@ -123,6 +123,8 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
     return list;
   }, [boardLayout, tileGrid]);
 
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <div className="relative w-full max-w-[100vw] sm:max-w-[500px] aspect-square mx-auto bg-[#1B1A1F] p-1.5 sm:p-2 rounded-lg border-2 border-[#4B4A57] shadow-2xl overflow-hidden select-none">
       {/* Board Theme Background */}
@@ -232,7 +234,7 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
               y: `${topPercent * 10}%`,
               scale: isCurrentTurn ? 1.15 : 1,
             }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            transition={shouldReduceMotion ? { duration: 0.1 } : { type: "spring", stiffness: 300, damping: 25 }}
           >
             <div className="relative flex flex-col items-center">
               {/* Turn Highlight Ring & Camera Beacon */}
