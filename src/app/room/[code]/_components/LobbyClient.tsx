@@ -78,6 +78,9 @@ export default function LobbyClient({
       const res = await getRoomPlayers(roomCode);
       if (res?.success && Array.isArray(res.players)) {
         setPlayers(res.players as any);
+        if (res.status === "IN_PROGRESS") {
+          router.push(`/room/${roomCode}/play`);
+        }
       }
     } catch (err) {
       console.warn("syncFreshPlayers warning:", err);

@@ -146,30 +146,82 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
 
         {connections.map((conn, idx) => {
           const isBoost = conn.type === "boost";
-          const midX = (conn.x1 + conn.x2) / 2 + (isBoost ? 0 : (idx % 2 === 0 ? 12 : -12));
-          const midY = (conn.y1 + conn.y2) / 2;
+          const dx = conn.x2 - conn.x1;
+          const dy = conn.y2 - conn.y1;
+          const dist = Math.hypot(dx, dy) || 1;
+          const ux = dx / dist;
+          const uy = dy / dist;
+          const px = -uy;
+          const py = ux;
+          
+          const offset = 2.2; // Rail offset percentage
 
           if (isBoost) {
-            // Render Crisp Ladder Rungs
+            // Render Crisp Pixel Art Wooden Ladder with Side Rails & Rungs
+            const rail1X1 = conn.x1 + px * offset;
+            const rail1Y1 = conn.y1 + py * offset;
+            const rail1X2 = conn.x2 + px * offset;
+            const rail1Y2 = conn.y2 + py * offset;
+
+            const rail2X1 = conn.x1 - px * offset;
+            const rail2Y1 = conn.y1 - py * offset;
+            const rail2X2 = conn.x2 - px * offset;
+            const rail2Y2 = conn.y2 - py * offset;
+
+            const numRungs = Math.max(3, Math.floor(dist / 8));
+            const rungs = [];
+            for (let r = 1; r <= numRungs; r++) {
+              const t = r / (numRungs + 1);
+              const rx1 = (conn.x1 + dx * t) + px * offset;
+              const ry1 = (conn.y1 + dy * t) + py * offset;
+              const rx2 = (conn.x1 + dx * t) - px * offset;
+              const ry2 = (conn.y1 + dy * t) - py * offset;
+              rungs.push({ rx1, ry1, rx2, ry2 });
+            }
+
             return (
               <g key={`ladder-${idx}`} filter="url(#goldGlow)">
-                {/* Main Ladder Side Rails */}
-                <line x1={`${conn.x1}%`} y1={`${conn.y1}%`} x2={`${conn.x2}%`} y2={`${conn.y2}%`} stroke="#E8A33D" strokeWidth="6" strokeLinecap="round" />
-                <line x1={`${conn.x1}%`} y1={`${conn.y1}%`} x2={`${conn.x2}%`} y2={`${conn.y2}%`} stroke="#5FA35A" strokeWidth="2" strokeDasharray="4 6" strokeLinecap="round" />
+                {/* Shadow */}
+                <line x1={`${rail1X1 + 0.4}%`} y1={`${rail1Y1 + 0.4}%`} x2={`${rail1X2 + 0.4}%`} y2={`${rail1Y2 + 0.4}%`} stroke="#000" strokeWidth="4" opacity="0.5" strokeLinecap="round" />
+                <line x1={`${rail2X1 + 0.4}%`} y1={`${rail2Y1 + 0.4}%`} x2={`${rail2X2 + 0.4}%`} y2={`${rail2Y2 + 0.4}%`} stroke="#000" strokeWidth="4" opacity="0.5" strokeLinecap="round" />
+
+                {/* Outer Gold Rails */}
+                <line x1={`${rail1X1}%`} y1={`${rail1Y1}%`} x2={`${rail1X2}%`} y2={`${rail1Y2}%`} stroke="#E8A33D" strokeWidth="4" strokeLinecap="round" />
+                <line x1={`${rail2X1}%`} y1={`${rail2Y1}%`} x2={`${rail2X2}%`} y2={`${rail2Y2}%`} stroke="#E8A33D" strokeWidth="4" strokeLinecap="round" />
+                
+                {/* Inner Wood Core */}
+                <line x1={`${rail1X1}%`} y1={`${rail1Y1}%`} x2={`${rail1X2}%`} y2={`${rail1Y2}%`} stroke="#8B5A2B" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1={`${rail2X1}%`} y1={`${rail2Y1}%`} x2={`${rail2X2}%`} y2={`${rail2Y2}%`} stroke="#8B5A2B" strokeWidth="1.5" strokeLinecap="round" />
+
+                {/* Step Rungs */}
+                {rungs.map((r, rIdx) => (
+                  <g key={`rung-${rIdx}`}>
+                    <line x1={`${r.rx1}%`} y1={`${r.ry1}%`} x2={`${r.rx2}%`} y2={`${r.ry2}%`} stroke="#E8A33D" strokeWidth="3" strokeLinecap="square" />
+                    <line x1={`${r.rx1}%`} y1={`${r.ry1}%`} x2={`${r.rx2}%`} y2={`${r.ry2}%`} stroke="#8B5A2B" strokeWidth="1" strokeLinecap="square" />
+                  </g>
+                ))}
               </g>
             );
           } else {
-            // Render Curved Snake (Shadow Vine)
+            // Render Serpentine Curved Snake with Glowing Head
+            const curveOffset = (idx % 2 === 0 ? 12 : -12);
+            const midX = (conn.x1 + conn.x2) / 2 + px * curveOffset;
+            const midY = (conn.y1 + conn.y2) / 2 + py * curveOffset;
             const pathData = `M ${conn.x1} ${conn.y1} Q ${midX} ${midY} ${conn.x2} ${conn.y2}`;
+
             return (
               <g key={`snake-${idx}`} filter="url(#purpleGlow)">
-                {/* Outer Shadow Vine Path */}
-                <path d={pathData} fill="none" stroke="#232129" strokeWidth="10" strokeLinecap="round" />
-                {/* Inner Purple Vine Body */}
-                <path d={pathData} fill="none" stroke="#7C4DA8" strokeWidth="7" strokeLinecap="round" />
-                {/* Snake Head Dot */}
-                <circle cx={`${conn.x1}%`} cy={`${conn.y1}%`} r="6" fill="#C24A4A" />
-                <circle cx={`${conn.x1}%`} cy={`${conn.y1}%`} r="3" fill="#FFFFFF" />
+                {/* Black Shadow Path */}
+                <path d={pathData} fill="none" stroke="#000000" strokeWidth="9" opacity="0.6" strokeLinecap="round" />
+                {/* Dark Purple Outer Body */}
+                <path d={pathData} fill="none" stroke="#4B1059" strokeWidth="7" strokeLinecap="round" />
+                {/* Bright Violet Inner Body */}
+                <path d={pathData} fill="none" stroke="#7C4DA8" strokeWidth="4.5" strokeLinecap="round" />
+                {/* Spine Dots */}
+                <path d={pathData} fill="none" stroke="#E85D3D" strokeWidth="1.5" strokeDasharray="3 5" strokeLinecap="round" />
+                {/* Snake Head Dot on Top Tile */}
+                <circle cx={`${conn.x1}%`} cy={`${conn.y1}%`} r="5" fill="#7C4DA8" stroke="#E85D3D" strokeWidth="1.5" />
+                <circle cx={`${conn.x1}%`} cy={`${conn.y1}%`} r="2" fill="#E85D3D" />
               </g>
             );
           }

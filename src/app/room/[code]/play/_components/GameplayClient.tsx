@@ -42,6 +42,7 @@ interface PlayerData {
 interface GameplayClientProps {
   roomCode: string;
   currentUserId: string;
+  hostUserId?: string;
   initialPlayers: PlayerData[];
   currentTurnIndex: number;
   status: string;
@@ -50,6 +51,7 @@ interface GameplayClientProps {
 export default function GameplayClient({
   roomCode,
   currentUserId,
+  hostUserId,
   initialPlayers,
   currentTurnIndex: initialTurnIndex,
   status: initialStatus,
@@ -121,7 +123,7 @@ export default function GameplayClient({
   }, [turnIndex, turnActionCounter, status, isMyTurn]);
 
   // CPU Computer Automatic Turn Handler (If active turn player is CPU, Host triggers roll automatically after 1.2s delay)
-  const isHost = currentUserId === sortedPlayers[0]?.userId;
+  const isHost = hostUserId ? currentUserId === hostUserId : currentUserId === sortedPlayers[0]?.userId;
   const isCpuTurn = activeTurnPlayer?.userId?.startsWith("cpu_");
 
   useEffect(() => {
