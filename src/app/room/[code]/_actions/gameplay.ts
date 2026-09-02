@@ -354,10 +354,19 @@ export async function rollDice(roomCode: string) {
       return { error: "Permainan tidak aktif." };
     }
 
-    // 1. Validate active turn player
-    const activePlayer = room.players.find(
+    // 1. Validate active turn player with auto-recovery if turnOrder desynced
+    let activePlayer = room.players.find(
       (p: any) => p.turnOrder === room.currentTurnIndex
     );
+    if (!activePlayer && room.players.length > 0) {
+      activePlayer = room.players[0];
+      await db.room.update({
+        where: { id: room.id },
+        data: { currentTurnIndex: activePlayer.turnOrder },
+      });
+      room.currentTurnIndex = activePlayer.turnOrder;
+    }
+
     if (!activePlayer || activePlayer.userId !== session.user.id) {
       return { error: "Bukan giliranmu saat ini!" };
     }
@@ -454,9 +463,9 @@ export async function rollDice(roomCode: string) {
     // Revalidate paths
     revalidatePath(`/room/${roomCode}/play`);
     return { success: true };
-  } catch (err) {
-    console.error(err);
-    return { error: "Gagal memproses giliran." };
+  } catch (err: any) {
+    console.error("rollDice error:", err);
+    return { error: err?.message || "Gagal memproses giliran." };
   }
 }
 
@@ -485,9 +494,18 @@ export async function executeCpuTurn(roomCode: string) {
       return { error: "Kamu tidak berada di room ini." };
     }
 
-    const activePlayer = room.players.find(
+    let activePlayer = room.players.find(
       (p: any) => p.turnOrder === room.currentTurnIndex
     );
+    if (!activePlayer && room.players.length > 0) {
+      activePlayer = room.players[0];
+      await db.room.update({
+        where: { id: room.id },
+        data: { currentTurnIndex: activePlayer.turnOrder },
+      });
+      room.currentTurnIndex = activePlayer.turnOrder;
+    }
+
     if (!activePlayer || !activePlayer.userId.startsWith("cpu_")) {
       return { error: "Saat ini bukan giliran CPU." };
     }

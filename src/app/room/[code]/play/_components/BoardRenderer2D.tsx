@@ -134,7 +134,11 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
       />
 
       {/* Full-Board SVG Overlay for Organic Curved Snakes & Luminous Ladders */}
-      <svg className="absolute inset-2 w-[calc(100%-16px)] h-[calc(100%-16px)] pointer-events-none z-10 overflow-visible">
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        className="absolute inset-2 w-[calc(100%-16px)] h-[calc(100%-16px)] pointer-events-none z-10 overflow-visible"
+      >
         <defs>
           <filter id="purpleGlow" x="-20%" y="-20%" width="140%" height="140%">
             <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#7C4DA8" floodOpacity="0.8" />
@@ -182,22 +186,22 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
             return (
               <g key={`ladder-${idx}`} filter="url(#goldGlow)">
                 {/* Shadow */}
-                <line x1={`${rail1X1 + 0.4}%`} y1={`${rail1Y1 + 0.4}%`} x2={`${rail1X2 + 0.4}%`} y2={`${rail1Y2 + 0.4}%`} stroke="#000" strokeWidth="4" opacity="0.5" strokeLinecap="round" />
-                <line x1={`${rail2X1 + 0.4}%`} y1={`${rail2Y1 + 0.4}%`} x2={`${rail2X2 + 0.4}%`} y2={`${rail2Y2 + 0.4}%`} stroke="#000" strokeWidth="4" opacity="0.5" strokeLinecap="round" />
+                <line x1={rail1X1 + 0.4} y1={rail1Y1 + 0.4} x2={rail1X2 + 0.4} y2={rail1Y2 + 0.4} stroke="#000" strokeWidth="4" opacity="0.5" strokeLinecap="round" />
+                <line x1={rail2X1 + 0.4} y1={rail2Y1 + 0.4} x2={rail2X2 + 0.4} y2={rail2Y2 + 0.4} stroke="#000" strokeWidth="4" opacity="0.5" strokeLinecap="round" />
 
                 {/* Outer Gold Rails */}
-                <line x1={`${rail1X1}%`} y1={`${rail1Y1}%`} x2={`${rail1X2}%`} y2={`${rail1Y2}%`} stroke="#E8A33D" strokeWidth="4" strokeLinecap="round" />
-                <line x1={`${rail2X1}%`} y1={`${rail2Y1}%`} x2={`${rail2X2}%`} y2={`${rail2Y2}%`} stroke="#E8A33D" strokeWidth="4" strokeLinecap="round" />
+                <line x1={rail1X1} y1={rail1Y1} x2={rail1X2} y2={rail1Y2} stroke="#E8A33D" strokeWidth="4" strokeLinecap="round" />
+                <line x1={rail2X1} y1={rail2Y1} x2={rail2X2} y2={rail2Y2} stroke="#E8A33D" strokeWidth="4" strokeLinecap="round" />
                 
                 {/* Inner Wood Core */}
-                <line x1={`${rail1X1}%`} y1={`${rail1Y1}%`} x2={`${rail1X2}%`} y2={`${rail1Y2}%`} stroke="#8B5A2B" strokeWidth="1.5" strokeLinecap="round" />
-                <line x1={`${rail2X1}%`} y1={`${rail2Y1}%`} x2={`${rail2X2}%`} y2={`${rail2Y2}%`} stroke="#8B5A2B" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1={rail1X1} y1={rail1Y1} x2={rail1X2} y2={rail1Y2} stroke="#8B5A2B" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1={rail2X1} y1={rail2Y1} x2={rail2X2} y2={rail2Y2} stroke="#8B5A2B" strokeWidth="1.5" strokeLinecap="round" />
 
                 {/* Step Rungs */}
                 {rungs.map((r, rIdx) => (
                   <g key={`rung-${rIdx}`}>
-                    <line x1={`${r.rx1}%`} y1={`${r.ry1}%`} x2={`${r.rx2}%`} y2={`${r.ry2}%`} stroke="#E8A33D" strokeWidth="3" strokeLinecap="square" />
-                    <line x1={`${r.rx1}%`} y1={`${r.ry1}%`} x2={`${r.rx2}%`} y2={`${r.ry2}%`} stroke="#8B5A2B" strokeWidth="1" strokeLinecap="square" />
+                    <line x1={r.rx1} y1={r.ry1} x2={r.rx2} y2={r.ry2} stroke="#E8A33D" strokeWidth="3" strokeLinecap="square" />
+                    <line x1={r.rx1} y1={r.ry1} x2={r.rx2} y2={r.ry2} stroke="#8B5A2B" strokeWidth="1" strokeLinecap="square" />
                   </g>
                 ))}
               </g>
@@ -220,8 +224,8 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
                 {/* Spine Dots */}
                 <path d={pathData} fill="none" stroke="#E85D3D" strokeWidth="1.5" strokeDasharray="3 5" strokeLinecap="round" />
                 {/* Snake Head Dot on Top Tile */}
-                <circle cx={`${conn.x1}%`} cy={`${conn.y1}%`} r="5" fill="#7C4DA8" stroke="#E85D3D" strokeWidth="1.5" />
-                <circle cx={`${conn.x1}%`} cy={`${conn.y1}%`} r="2" fill="#E85D3D" />
+                <circle cx={conn.x1} cy={conn.y1} r="4" fill="#7C4DA8" stroke="#E85D3D" strokeWidth="1.5" />
+                <circle cx={conn.x1} cy={conn.y1} r="1.5" fill="#E85D3D" />
               </g>
             );
           }
@@ -270,20 +274,17 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
 
       {/* Render 2D Animated Player Tokens */}
       {players.map((player) => {
-        const currentTile = tileGrid.find((t) => t.tileNumber === Math.max(1, Math.min(100, player.position))) || tileGrid[0];
+        const playerPos = player.position <= 0 ? 1 : Math.min(100, player.position);
+        const currentTile = tileGrid.find((t) => t.tileNumber === playerPos) || tileGrid[0];
         const isCurrentTurn = player.userId === currentTurnUserId;
-
-        // Position percentage relative to 10x10 grid
-        const leftPercent = currentTile.col * 10;
-        const topPercent = currentTile.row * 10;
 
         return (
           <motion.div
             key={player.userId}
-            className="absolute z-10 pointer-events-none flex flex-col items-center justify-center w-[10%] h-[10%]"
+            className="absolute top-0 left-0 z-20 pointer-events-none flex flex-col items-center justify-center w-[10%] h-[10%]"
             animate={{
-              x: `${leftPercent * 10}%`,
-              y: `${topPercent * 10}%`,
+              x: `${currentTile.col * 100}%`,
+              y: `${currentTile.row * 100}%`,
               scale: isCurrentTurn ? 1.15 : 1,
             }}
             transition={shouldReduceMotion ? { duration: 0.1 } : { type: "spring", stiffness: 300, damping: 25 }}

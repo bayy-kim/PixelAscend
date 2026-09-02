@@ -218,9 +218,12 @@ export function resolveTurn(
     activePlayer.isWinner = true;
   }
 
-  // 5. Determine next turn index & Extra turn for rolling a 6
+  // 5. Determine next turn index & Extra turn for rolling a 6 based on actual existing turnOrder values
   const isExtraTurn = diceRoll === 6 && !isWinner;
-  const nextTurnIndex = isExtraTurn ? currentTurnIndex : (currentTurnIndex + 1) % roomPlayers.length;
+  const sortedByTurn = [...roomPlayers].sort((a, b) => a.turnOrder - b.turnOrder);
+  const currentIdx = sortedByTurn.findIndex((p) => p.userId === activePlayer.userId);
+  const nextPlayer = sortedByTurn[(currentIdx + 1) % sortedByTurn.length] || sortedByTurn[0];
+  const nextTurnIndex = isExtraTurn ? activePlayer.turnOrder : nextPlayer.turnOrder;
 
   return {
     diceRoll,
