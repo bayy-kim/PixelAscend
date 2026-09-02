@@ -124,49 +124,58 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
   }, [boardLayout, tileGrid]);
 
   return (
-    <div className="relative w-full max-w-[100vw] sm:max-w-[500px] aspect-square mx-auto bg-[#1B1A1F] p-1.5 sm:p-2 rounded-lg border-2 border-[#4B4A57] shadow-xl overflow-hidden select-none">
+    <div className="relative w-full max-w-[100vw] sm:max-w-[500px] aspect-square mx-auto bg-[#1B1A1F] p-1.5 sm:p-2 rounded-lg border-2 border-[#4B4A57] shadow-2xl overflow-hidden select-none">
       {/* Board Theme Background */}
       <div 
-        className="absolute inset-2 bg-cover bg-center opacity-40 pixelated pointer-events-none"
+        className="absolute inset-2 bg-cover bg-center opacity-60 pixelated pointer-events-none rounded"
         style={{ backgroundImage: "url('/themes/wanderers-path/board.png')" }}
       />
 
-      {/* Grid Layout (10x10) */}
-      <div className="relative w-full h-full grid grid-cols-10 grid-rows-10 gap-0.5">
-        
-        {/* Pixel Art Connectors (Ladder & Vine Background Textures) */}
+      {/* Full-Board SVG Overlay for Organic Curved Snakes & Luminous Ladders */}
+      <svg className="absolute inset-2 w-[calc(100%-16px)] h-[calc(100%-16px)] pointer-events-none z-10 overflow-visible">
+        <defs>
+          <filter id="purpleGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#7C4DA8" floodOpacity="0.8" />
+          </filter>
+          <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#E8A33D" floodOpacity="0.8" />
+          </filter>
+        </defs>
+
         {connections.map((conn, idx) => {
           const isBoost = conn.type === "boost";
-          const imageUrl = isBoost ? "url('/elements/tangga.png')" : "url('/elements/ular.png')";
-          // Set thickness: 24px wide for ladder, 16px wide for vine.
-          const thickness = isBoost ? "24px" : "16px";
-          // Add drop shadow using CSS filter
-          const filterStyle = isBoost ? "drop-shadow(2px 2px 2px rgba(0,0,0,0.8))" : "drop-shadow(2px 2px 2px rgba(0,0,0,0.8)) hue-rotate(-20deg)";
+          const midX = (conn.x1 + conn.x2) / 2 + (isBoost ? 0 : (idx % 2 === 0 ? 12 : -12));
+          const midY = (conn.y1 + conn.y2) / 2;
 
-          return (
-            <div
-              key={`conn-${idx}`}
-              className="absolute pointer-events-none z-10 pixelated"
-              style={{
-                // Position centered on origin tile
-                left: `calc(${conn.x1}% - ${parseFloat(thickness)/2}px)`,
-                top: `calc(${conn.y1}% - ${parseFloat(thickness)/2}px)`,
-                // Expand horizontally based on computed hypotenuse length
-                width: `${conn.length}%`, 
-                height: thickness,
-                // Rotate around the left-center origin point
-                transformOrigin: "left center",
-                transform: `rotate(${conn.angle}deg)`,
-                // Texture filling
-                backgroundImage: imageUrl,
-                backgroundRepeat: "repeat-x",
-                backgroundSize: "contain",
-                filter: filterStyle,
-                opacity: 0.9,
-              }}
-            />
-          );
+          if (isBoost) {
+            // Render Crisp Ladder Rungs
+            return (
+              <g key={`ladder-${idx}`} filter="url(#goldGlow)">
+                {/* Main Ladder Side Rails */}
+                <line x1={`${conn.x1}%`} y1={`${conn.y1}%`} x2={`${conn.x2}%`} y2={`${conn.y2}%`} stroke="#E8A33D" strokeWidth="6" strokeLinecap="round" />
+                <line x1={`${conn.x1}%`} y1={`${conn.y1}%`} x2={`${conn.x2}%`} y2={`${conn.y2}%`} stroke="#5FA35A" strokeWidth="2" strokeDasharray="4 6" strokeLinecap="round" />
+              </g>
+            );
+          } else {
+            // Render Curved Snake (Shadow Vine)
+            const pathData = `M ${conn.x1} ${conn.y1} Q ${midX} ${midY} ${conn.x2} ${conn.y2}`;
+            return (
+              <g key={`snake-${idx}`} filter="url(#purpleGlow)">
+                {/* Outer Shadow Vine Path */}
+                <path d={pathData} fill="none" stroke="#232129" strokeWidth="10" strokeLinecap="round" />
+                {/* Inner Purple Vine Body */}
+                <path d={pathData} fill="none" stroke="#7C4DA8" strokeWidth="7" strokeLinecap="round" />
+                {/* Snake Head Dot */}
+                <circle cx={`${conn.x1}%`} cy={`${conn.y1}%`} r="6" fill="#C24A4A" />
+                <circle cx={`${conn.x1}%`} cy={`${conn.y1}%`} r="3" fill="#FFFFFF" />
+              </g>
+            );
+          }
         })}
+      </svg>
+
+      {/* Grid Layout (10x10) */}
+      <div className="relative w-full h-full grid grid-cols-10 grid-rows-10 gap-0.5 z-0">
 
         {tileGrid.map(({ tileNumber }) => {
           const effect = effectMap.get(tileNumber);

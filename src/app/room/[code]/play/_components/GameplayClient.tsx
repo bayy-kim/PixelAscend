@@ -16,8 +16,9 @@ import {
 import { BoardRenderer2D, ActiveEmote } from "./BoardRenderer2D";
 import { BOARD_LAYOUT } from "@/lib/game/board";
 import { sounds, triggerHaptic } from "@/lib/audio-haptics";
+import { getCharacterMedia } from "@/lib/character-meta";
 import { useRouter } from "next/navigation";
-import { Shield, Sparkles, Skull, Dices, ChevronRight, Zap, ArrowUp, Volume2, VolumeX, RotateCcw, Smile, Loader2 } from "lucide-react";
+import { Shield, Sparkles, Skull, Dices, ChevronRight, Zap, ArrowUp, Volume2, VolumeX, RotateCcw, Smile, Loader2, Trophy } from "lucide-react";
 
 interface PlayerData {
   userId: string;
@@ -182,8 +183,6 @@ export default function GameplayClient({
           })
         );
       }
-
-      router.refresh();
     });
 
     // Real-time room rematched handler
@@ -195,13 +194,22 @@ export default function GameplayClient({
     channel.bind("turn-resolved", (data: any) => {
       // 1. Play dice roll animation & sound first
       setIsRolling(true);
-      setRolledValue(data.diceRoll);
-      setModifierValue(data.rollModifier);
+      
+      // Spinner / Dice animation logic
+      let currentFace = 1;
+      const diceInterval = setInterval(() => {
+        currentFace = currentFace >= 6 ? 1 : currentFace + 1;
+        setRolledValue(currentFace);
+      }, 100);
+
       sounds.playDiceRoll();
       triggerHaptic("light");
 
       setTimeout(() => {
+        clearInterval(diceInterval);
         setIsRolling(false);
+        setRolledValue(data.diceRoll);
+        setModifierValue(data.rollModifier);
         sounds.playStep();
 
         // 2. Update player position optimistically in local state to prevent loading flash
@@ -212,9 +220,6 @@ export default function GameplayClient({
               : p
           )
         );
-        
-        // Refresh server components lazily in the background
-        router.refresh();
 
         // 3. Play cutscenes based on target tile effect triggered
         if (data.effectTriggered) {
@@ -676,6 +681,64 @@ export default function GameplayClient({
             >
               Batal
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Victory Showcase Modal with MP4 Video Animation Showcase */}
+      {status === "FINISHED" && (
+        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4 backdrop-blur-md">
+          <div className="w-full max-w-md bg-[#1B1A1F] border-2 border-[#E8A33D] rounded-2xl p-6 flex flex-col items-center gap-4 text-center shadow-[0_0_50px_rgba(232,163,61,0.4)] animate-in fade-in zoom-in-95 duration-300">
+            <div className="flex items-center gap-2 text-[#E8A33D]">
+              <Trophy className="w-8 h-8 animate-bounce" />
+              <h2 className="font-press-start text-lg text-[#E8A33D]">VICTORY SUMMIT!</h2>
+              <Trophy className="w-8 h-8 animate-bounce" />
+            </div>
+
+            {(() => {
+              const winnerPlayer = sortedPlayers.find((p) => p.position >= 100) || sortedPlayers[0];
+              const winnerMedia = getCharacterMedia(winnerPlayer.characterId);
+
+              return (
+                <div className="flex flex-col items-center gap-3 w-full">
+                  {/* MP4 Walk Cycle Video Showcase Box */}
+                  <div className="relative w-48 h-48 rounded-xl overflow-hidden border-4 border-[#E8A33D] bg-black shadow-2xl">
+                    <video
+                      src={winnerMedia.walkVideo}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end justify-center p-2">
+                      <span className="text-[10px] font-press-start text-[#E8A33D]">
+                        {winnerPlayer.user.nickname || winnerPlayer.user.name}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-xs font-mono text-[#F2E9D8]/80">
+                    Selamat! <strong className="text-[#5FA35A]">{winnerPlayer.user.nickname || winnerPlayer.user.name}</strong> berhasil mencapai puncak Tile 100!
+                  </p>
+                </div>
+              );
+            })()}
+
+            <div className="flex gap-3 w-full pt-2">
+              <button
+                onClick={handleRematch}
+                className="flex-1 py-3 bg-[#5FA35A] hover:bg-[#6EB668] text-[#1B1A1F] font-press-start text-xs rounded-lg transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <RotateCcw className="w-4 h-4" /> MAIN LAGI
+              </button>
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="py-3 px-4 bg-[#232129] hover:bg-[#4B4A57] text-[#F2E9D8] font-mono text-xs rounded-lg border border-[#4B4A57] transition-all cursor-pointer"
+              >
+                Dashboard
+              </button>
+            </div>
           </div>
         </div>
       )}

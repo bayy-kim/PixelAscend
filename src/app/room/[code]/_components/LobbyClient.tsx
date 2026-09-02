@@ -5,8 +5,10 @@ import { pusherClient } from "@/lib/pusher-client";
 import { selectCharacterAndPalette, toggleReady, startGame, leaveLobby, kickPlayer, addCpuPlayer } from "../_actions/lobby";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { User, Check, Play, LogOut, Copy, Share2, CheckCheck, UserX, Bot, Loader2 } from "lucide-react";
+import { User, Check, Play, LogOut, Copy, Share2, CheckCheck, UserX, Bot, Loader2, Eye, Film } from "lucide-react";
 import { PixelSprite } from "@/app/_components/PixelSprite";
+import { CharacterShowcaseModal } from "./CharacterShowcaseModal";
+import { getCharacterMedia } from "@/lib/character-meta";
 
 interface CharacterData {
   id: string;
@@ -52,6 +54,7 @@ export default function LobbyClient({
   const [selectedPalette, setSelectedPalette] = useState<string>("default");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showcaseChar, setShowcaseChar] = useState<CharacterData | null>(null);
   
   const [isPendingReady, startReadyTransition] = useTransition();
   const [isPendingPick, startPickTransition] = useTransition();
@@ -103,14 +106,12 @@ export default function LobbyClient({
           ];
         });
       }
-      router.refresh();
     });
 
     channel.bind("player-left", (data: any) => {
       if (data?.userId) {
         setPlayers((prev) => prev.filter((p) => p.userId !== data.userId));
       }
-      router.refresh();
     });
 
     channel.bind("player-picked-character", (data: any) => {
@@ -123,7 +124,6 @@ export default function LobbyClient({
           )
         );
       }
-      router.refresh();
     });
 
     channel.bind("player-ready", (data: any) => {
@@ -132,7 +132,6 @@ export default function LobbyClient({
           prev.map((p) => (p.userId === data.userId ? { ...p, isReady: data.isReady } : p))
         );
       }
-      router.refresh();
     });
 
     channel.bind("game-started", () => {
@@ -259,53 +258,96 @@ export default function LobbyClient({
               (p) => p.characterId === char.id && p.userId !== currentUserId
             );
             const isSelected = selectedChar === char.id;
+            const charMedia = getCharacterMedia(char.id);
 
             return (
-              <button
+              <div
                 key={char.id}
-                onClick={() => !isTakenByOther && handlePickCharacter(char.id, selectedPalette)}
-                disabled={isTakenByOther || (isReady && !isHost)}
-                className={`p-4 bg-[#1B1A1F] border-2 rounded flex flex-col items-center gap-3 transition-all relative overflow-hidden group ${
+                className={`p-3 bg-[#1B1A1F] border-2 rounded flex flex-col items-center justify-between gap-2 transition-all relative overflow-hidden group ${
                   isSelected 
                     ? "border-[#E8A33D] shadow-[0_0_10px_rgba(232,163,61,0.2)]" 
                     : isTakenByOther 
-                    ? "opacity-40 border-transparent cursor-not-allowed" 
+                    ? "opacity-40 border-transparent" 
                     : "border-transparent hover:border-[#4B4A57]"
                 }`}
               >
-                {/* Character preview animated sprite representation */}
-                <PixelSprite characterId={char.id} direction="down" isWalking={isSelected} size={48} />
+                {/* Showcase POV & Video Button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowcaseChar(char);
+                  }}
+                  className="absolute top-1.5 right-1.5 z-20 p-1 bg-[#232129]/90 hover:bg-[#E8A33D] hover:text-[#1B1A1F] text-[#F2E9D8] rounded border border-[#4B4A57] transition-all"
+                  title="Lihat Video Animasi MP4 & POV Portrait"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                </button>
 
-                <div className="flex flex-col items-center text-center gap-1">
-                  <span className="text-xs font-bold leading-tight font-sans text-[#F2E9D8] truncate max-w-[100px]">
-                    {char.name.split(" — ")[0]}
-                  </span>
-                  <span className="text-[9px] text-[#F2E9D8]/40 font-mono">
-                    {char.role}
-                  </span>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => !isTakenByOther && handlePickCharacter(char.id, selectedPalette)}
+                  disabled={isTakenByOther || (isReady && !isHost)}
+                  className="w-full flex flex-col items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  {/* Character preview animated sprite representation */}
+                  <PixelSprite characterId={char.id} direction="down" isWalking={isSelected} size={48} />
+
+                  <div className="flex flex-col items-center text-center gap-0.5">
+                    <span className="text-xs font-bold leading-tight font-sans text-[#F2E9D8] truncate max-w-[100px]">
+                      {char.name.split(" — ")[0]}
+                    </span>
+                    <span className="text-[9px] text-[#F2E9D8]/40 font-mono">
+                      {char.role}
+                    </span>
+                  </div>
+                </button>
 
                 {isTakenByOther && (
-                  <div className="absolute inset-0 bg-[#C24A4A]/10 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-[#C24A4A]/10 flex items-center justify-center pointer-events-none">
                     <span className="bg-[#C24A4A] text-white text-[8px] font-press-start px-2 py-0.5 rounded">TAKEN</span>
                   </div>
                 )}
-              </button>
+              </div>
             );
           })}
         </div>
 
-        {/* Selected character detail & color palette swapper */}
+        {/* Selected character detail, video preview badge & color palette swapper */}
         {activeCharData && (
           <div className="bg-[#1B1A1F] rounded p-6 border border-[#4B4A57]/20 flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row items-center gap-6">
-                {/* Selected representation */}
-                <PixelSprite characterId={activeCharData.id} variant={selectedPalette} direction="down" isWalking={true} size={56} />
+              {/* Live MP4 Video Preview Badge */}
+              <div className="relative group cursor-pointer" onClick={() => setShowcaseChar(activeCharData)}>
+                <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-[#E8A33D] bg-black shadow-lg">
+                  <video
+                    src={getCharacterMedia(activeCharData.id).walkVideo}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="absolute -bottom-2 inset-x-0 flex justify-center">
+                  <span className="bg-[#E8A33D] text-[#1B1A1F] text-[8px] font-bold font-mono px-2 py-0.5 rounded-full uppercase flex items-center gap-1 shadow">
+                    <Film className="w-2.5 h-2.5" /> MP4 SHOWCASE
+                  </span>
+                </div>
+              </div>
 
-              <div className="flex-1 flex flex-col gap-2">
-                <span className="text-sm font-press-start text-[#E8A33D]">
-                  {activeCharData.name}
-                </span>
+              <div className="flex-1 flex flex-col gap-2 text-center sm:text-left">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <span className="text-sm font-press-start text-[#E8A33D]">
+                    {activeCharData.name}
+                  </span>
+                  <button
+                    onClick={() => setShowcaseChar(activeCharData)}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#232129] hover:bg-[#4B4A57]/60 text-[#E8A33D] border border-[#E8A33D]/40 rounded text-xs font-mono transition-colors"
+                  >
+                    <Eye className="w-3.5 h-3.5" /> Full Video & POV
+                  </button>
+                </div>
                 <span className="text-xs text-[#F2E9D8]/60 font-mono">
                   Ability: <span className="text-[#5FA35A] font-bold">{activeCharData.abilityName}</span>
                 </span>
@@ -467,6 +509,13 @@ export default function LobbyClient({
           </div>
         </div>
       </div>
+
+      {/* Character Video & POV Showcase Modal */}
+      <CharacterShowcaseModal
+        isOpen={!!showcaseChar}
+        character={showcaseChar}
+        onClose={() => setShowcaseChar(null)}
+      />
     </div>
   );
 }
