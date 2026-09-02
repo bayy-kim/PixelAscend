@@ -403,20 +403,24 @@ export async function rollDice(roomCode: string) {
       },
     });
 
-    // Write log entry `GameMove`
-    await db.gameMove.create({
-      data: {
-        roomId: room.id,
-        roomPlayerId: activePlayer.id,
-        diceResult: resolution.diceRoll + resolution.rollModifier,
-        fromTile: activePlayer.position,
-        toTile: resolution.finalPosition,
-        effectType: resolution.effectTriggered?.type || null,
-        effectDetail: resolution.effectTriggered
-          ? JSON.stringify(resolution.effectTriggered)
-          : undefined, // using undefined to write standard SQL NULL
-      },
-    });
+    // Safely write log entry `GameMove`
+    try {
+      await db.gameMove.create({
+        data: {
+          roomId: room.id,
+          roomPlayerId: activePlayer.id,
+          diceResult: resolution.diceRoll + resolution.rollModifier,
+          fromTile: activePlayer.position,
+          toTile: resolution.finalPosition,
+          effectType: resolution.effectTriggered?.type || null,
+          effectDetail: resolution.effectTriggered
+            ? (resolution.effectTriggered as any)
+            : undefined,
+        },
+      });
+    } catch (moveErr) {
+      console.warn("GameMove log warning:", moveErr);
+    }
 
     // Update Room overall status & turn index
     const statusUpdate = resolution.winnerUserId ? "FINISHED" : "IN_PROGRESS";
@@ -559,19 +563,23 @@ export async function executeCpuTurn(roomCode: string) {
       },
     });
 
-    await db.gameMove.create({
-      data: {
-        roomId: room.id,
-        roomPlayerId: activePlayer.id,
-        diceResult: resolution.diceRoll + resolution.rollModifier,
-        fromTile: activePlayer.position,
-        toTile: resolution.finalPosition,
-        effectType: resolution.effectTriggered?.type || null,
-        effectDetail: resolution.effectTriggered
-          ? JSON.stringify(resolution.effectTriggered)
-          : undefined,
-      },
-    });
+    try {
+      await db.gameMove.create({
+        data: {
+          roomId: room.id,
+          roomPlayerId: activePlayer.id,
+          diceResult: resolution.diceRoll + resolution.rollModifier,
+          fromTile: activePlayer.position,
+          toTile: resolution.finalPosition,
+          effectType: resolution.effectTriggered?.type || null,
+          effectDetail: resolution.effectTriggered
+            ? (resolution.effectTriggered as any)
+            : undefined,
+        },
+      });
+    } catch (moveErr) {
+      console.warn("GameMove log warning:", moveErr);
+    }
 
     const statusUpdate = resolution.winnerUserId ? "FINISHED" : "IN_PROGRESS";
     await db.room.update({
