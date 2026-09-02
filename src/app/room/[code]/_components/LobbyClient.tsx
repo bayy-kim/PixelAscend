@@ -138,8 +138,14 @@ export default function LobbyClient({
       router.push(`/room/${roomCode}/play`);
     });
 
+    // Fallback automatic background refresh every 3 seconds so manual refresh is NEVER required
+    const syncInterval = setInterval(() => {
+      router.refresh();
+    }, 3000);
+
     return () => {
       pusherClient.unsubscribe(channelName);
+      clearInterval(syncInterval);
     };
   }, [roomCode, router]);
 

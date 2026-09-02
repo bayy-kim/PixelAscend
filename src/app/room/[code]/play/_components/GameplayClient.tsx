@@ -277,8 +277,14 @@ export default function GameplayClient({
       }, 1200); // 1.2s dice roll loop duration
     });
 
+    // Fallback automatic background refresh every 3 seconds so manual refresh is NEVER required
+    const syncInterval = setInterval(() => {
+      router.refresh();
+    }, 3000);
+
     return () => {
       pusherClient.unsubscribe(channelName);
+      clearInterval(syncInterval);
     };
   }, [roomCode, router, currentUserId]);
 
