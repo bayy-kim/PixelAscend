@@ -12,13 +12,14 @@ import {
   executeForesightReroll,
   armVanish,
   executeSwiftStride,
+  executeCpuTurn,
 } from "../../_actions/gameplay";
 import { BoardRenderer2D, ActiveEmote } from "./BoardRenderer2D";
 import { BOARD_LAYOUT } from "@/lib/game/board";
 import { sounds, triggerHaptic } from "@/lib/audio-haptics";
 import { getCharacterMedia } from "@/lib/character-meta";
 import { useRouter } from "next/navigation";
-import { Shield, Sparkles, Skull, Dices, ChevronRight, Zap, ArrowUp, Volume2, VolumeX, RotateCcw, Smile, Loader2, Trophy } from "lucide-react";
+import { Shield, Sparkles, Skull, Dices, ChevronRight, Zap, ArrowUp, Volume2, VolumeX, RotateCcw, Smile, Loader2, Trophy, Bot } from "lucide-react";
 
 interface PlayerData {
   userId: string;
@@ -128,10 +129,10 @@ export default function GameplayClient({
 
     const timer = setTimeout(() => {
       startRollTransition(async () => {
-        const res = await rollDice(roomCode);
+        const res = await executeCpuTurn(roomCode);
         if (res?.error) console.warn("CPU roll warning:", res.error);
       });
-    }, 1200);
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, [turnIndex, turnActionCounter, status, isCpuTurn, isHost, isRolling, isPendingRoll, roomCode]);
@@ -519,8 +520,17 @@ export default function GameplayClient({
               />
             </div>
 
-            <span className="text-sm font-bold text-[#F2E9D8] mt-1">
-              {isMyTurn ? "Giliranmu sekarang!" : `Menunggu giliran ${activeTurnPlayer?.user.nickname || activeTurnPlayer?.user.name}...`}
+            <span className="text-sm font-bold text-[#F2E9D8] mt-1 flex items-center justify-center gap-2">
+              {isMyTurn ? (
+                "Giliranmu sekarang!"
+              ) : isCpuTurn ? (
+                <>
+                  <Bot className="w-4 h-4 text-[#5FA35A] animate-pulse" />
+                  <span className="text-[#5FA35A]">🤖 {activeTurnPlayer?.user.nickname || activeTurnPlayer?.user.name} sedang berpikir...</span>
+                </>
+              ) : (
+                `Menunggu giliran ${activeTurnPlayer?.user.nickname || activeTurnPlayer?.user.name}...`
+              )}
             </span>
           </div>
 

@@ -443,7 +443,12 @@ export default function LobbyClient({
                     <span className="font-bold flex items-center gap-2">
                       {player.user.nickname || player.user.name}
                       {isPlayerHost && (
-                        <span className="text-[8px] px-1 bg-[#E8A33D]/20 text-[#E8A33D] rounded border border-[#E8A33D]/30">HOST</span>
+                        <span className="text-[8px] px-1 bg-[#E8A33D]/20 text-[#E8A33D] rounded border border-[#E8A33D]/30 font-press-start">HOST</span>
+                      )}
+                      {player.userId.startsWith("cpu_") && (
+                        <span className="text-[8px] px-1 bg-[#5FA35A]/20 text-[#5FA35A] rounded border border-[#5FA35A]/30 font-press-start flex items-center gap-0.5">
+                          <Bot className="w-2.5 h-2.5" /> BOT
+                        </span>
                       )}
                     </span>
                     <span className="text-[8px] text-[#F2E9D8]/40">
@@ -499,14 +504,27 @@ export default function LobbyClient({
             </button>
 
             {isHost ? (
-              <button
-                onClick={handleStartGame}
-                disabled={isPendingStart || players.length < 2 || !players.every(p => p.isReady || p.userId === hostUserId || p.userId.startsWith("cpu_"))}
-                className="flex-1 h-12 flex items-center justify-center gap-2 bg-[#E8A33D] hover:bg-[#F2B75C] active:translate-y-[1px] text-[#1B1A1F] font-press-start text-xs rounded transition-all cursor-pointer shadow-md disabled:opacity-50"
-              >
-                <Play className="w-4 h-4 fill-current" />
-                MULAI PERMAINAN
-              </button>
+              <div className="flex-1 flex gap-2">
+                {players.length < 8 && (
+                  <button
+                    onClick={handleAddCpu}
+                    disabled={isPendingCpu}
+                    className="px-3 h-12 flex items-center justify-center gap-1.5 bg-[#5FA35A]/20 hover:bg-[#5FA35A]/30 text-[#5FA35A] border border-[#5FA35A]/40 rounded font-mono text-xs cursor-pointer transition-colors disabled:opacity-50"
+                    title="Tambah Bot CPU ke room"
+                  >
+                    {isPendingCpu ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
+                    <span>+ BOT CPU</span>
+                  </button>
+                )}
+                <button
+                  onClick={handleStartGame}
+                  disabled={isPendingStart || players.length < 2 || !players.every(p => p.isReady || p.userId === hostUserId || p.userId.startsWith("cpu_"))}
+                  className="flex-1 h-12 flex items-center justify-center gap-2 bg-[#E8A33D] hover:bg-[#F2B75C] active:translate-y-[1px] text-[#1B1A1F] font-press-start text-xs rounded transition-all cursor-pointer shadow-md disabled:opacity-50"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  MULAI PERMAINAN
+                </button>
+              </div>
             ) : (
               <button
                 onClick={handleReadyToggle}

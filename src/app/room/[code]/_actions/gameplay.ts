@@ -455,3 +455,120 @@ export async function rollDice(roomCode: string) {
     return { error: "Gagal memproses giliran." };
   }
 }
+
+export async function executeCpuTurn(roomCode: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    const room = await db.room.findUnique({
+      where: { code: roomCode },
+      include: {
+        players: {
+          orderBy: { turnOrder: "asc" },
+        },
+      },
+    });
+
+    if (!room || room.status !== "IN_PROGRESS") {
+      return { error: "Permainan tidak aktif." };
+    }
+
+    const callerInRoom = room.players.some((p: any) => p.userId === session.user.id);
+    if (!callerInRoom) {
+      return { error: "Kamu tidak berada di room ini." };
+    }
+
+    const activePlayer = room.players.find(
+      (p: any) => p.turnOrder === room.currentTurnIndex
+    );
+    if (!activePlayer || !activePlayer.userId.startsWith("cpu_")) {
+      return { error: "Saat ini bukan giliran CPU." };
+    }
+
+    const mappedPlayers: PlayerState[] = room.players.map((p: any) => ({
+      userId: p.userId,
+      characterId: p.characterId,
+      position: p.position,
+      isReady: p.isReady,
+      heldCards: Array.isArray(p.heldCards) ? (p.heldCards as string[]) : [],
+      usedAbility: p.usedAbility,
+      isWinner: p.isWinner,
+      turnOrder: p.turnOrder,
+      skipNextTurn: p.skipNextTurn,
+      doubleDiceNextTurn: p.doubleDiceNextTurn,
+      guardiansWardArmed: p.guardiansWardArmed,
+      pendingDiceRoll: p.pendingDiceRoll,
+      isUntargetable: p.isUntargetable,
+      consecutiveSixes: p.consecutiveSixes || 0,
+    }));
+
+    const resolution = resolveTurn(mappedPlayers, room.currentTurnIndex);
+    const updatedActivePlayerState = mappedPlayers.find((p: any) => p.userId === activePlayer.userId);
+
+    await db.roomPlayer.update({
+      where: { id: activePlayer.id },
+      data: {
+        position: resolution.finalPosition,
+        heldCards: updatedActivePlayerState?.heldCards || [],
+        usedAbility: updatedActivePlayerState?.usedAbility,
+        skipNextTurn: updatedActivePlayerState?.skipNextTurn || false,
+        doubleDiceNextTurn: updatedActivePlayerState?.doubleDiceNextTurn || false,
+        guardiansWardArmed: updatedActivePlayerState?.guardiansWardArmed || false,
+        pendingDiceRoll: null,
+        isUntargetable: updatedActivePlayerState?.isUntargetable || false,
+        consecutiveSixes: resolution.consecutiveSixes || 0,
+        isWinner: resolution.winnerUserId === activePlayer.userId,
+      },
+    });
+
+    await db.gameMove.create({
+      data: {
+        roomId: room.id,
+        roomPlayerId: activePlayer.id,
+        diceResult: resolution.diceRoll + resolution.rollModifier,
+        fromTile: activePlayer.position,
+        toTile: resolution.finalPosition,
+        effectType: resolution.effectTriggered?.type || null,
+        effectDetail: resolution.effectTriggered
+          ? JSON.stringify(resolution.effectTriggered)
+          : undefined,
+      },
+    });
+
+    const statusUpdate = resolution.winnerUserId ? "FINISHED" : "IN_PROGRESS";
+    await db.room.update({
+      where: { id: room.id },
+      data: {
+        currentTurnIndex: resolution.nextTurnIndex,
+        status: statusUpdate,
+        endedAt: resolution.winnerUserId ? new Date() : null,
+      },
+    });
+
+    await pusherServer.trigger(`presence-room-${roomCode}`, "turn-resolved", {
+      userId: activePlayer.userId,
+      diceRoll: resolution.diceRoll,
+      rollModifier: resolution.rollModifier,
+      path: resolution.path,
+      effectTriggered: resolution.effectTriggered,
+      finalPosition: resolution.finalPosition,
+      nextTurnIndex: resolution.nextTurnIndex,
+      winnerUserId: resolution.winnerUserId,
+      cardDrawn: resolution.cardDrawn,
+      turnSkipped: resolution.turnSkipped,
+      turnSkippedReason: resolution.turnSkippedReason,
+      isExtraTurn: resolution.isExtraTurn,
+      consecutiveSixes: resolution.consecutiveSixes,
+      overchargedReset: resolution.overchargedReset,
+    });
+
+    revalidatePath(`/room/${roomCode}/play`);
+    return { success: true };
+  } catch (err) {
+    console.error("executeCpuTurn error:", err);
+    return { error: "Gagal memproses giliran CPU." };
+  }
+}
