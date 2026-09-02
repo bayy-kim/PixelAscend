@@ -27,12 +27,9 @@ export default async function DashboardPage() {
     return null;
   }
 
-  // Calculate statistics from RoomPlayer entries where Room status = FINISHED
-  const finishedGames = user.roomPlayers.filter(
-    (rp: any) => rp.room.status === "FINISHED"
-  );
-  const totalGames = finishedGames.length;
-  const totalWins = finishedGames.filter((rp: any) => rp.isWinner).length;
+  // Calculate statistics from all RoomPlayer entries
+  const totalGames = user.roomPlayers.length;
+  const totalWins = user.roomPlayers.filter((rp: any) => rp.isWinner).length;
   const winRate = totalGames > 0 ? Math.round((totalWins / totalGames) * 100) : 0;
 
   // Calculate most played hero
@@ -70,12 +67,11 @@ export default async function DashboardPage() {
 
   // Retrieve last 5 matches info
   const lastMatches = user.roomPlayers
-    .filter((rp: any) => rp.room.status === "FINISHED" || rp.room.status === "ABANDONED")
     .sort((a: any, b: any) => b.joinedAt.getTime() - a.joinedAt.getTime())
     .slice(0, 5);
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen bg-[#1B1A1F] text-[#F2E9D8]">
+    <div className="flex-1 flex flex-col min-h-screen bg-[#1B1A1F] text-[#F2E9D8] pb-16">
       {/* Header bar */}
       <header className="w-full bg-[#232129]/60 border-b border-[#4B4A57]/30 py-4 px-6 sticky top-0 backdrop-blur z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -108,7 +104,7 @@ export default async function DashboardPage() {
             >
               <button
                 type="submit"
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-transparent text-[#F2E9D8]/60 hover:text-[#C24A4A] text-xs font-mono rounded transition-colors cursor-pointer"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-transparent text-[#F2E9D8]/70 hover:text-[#C24A4A] text-xs font-mono rounded transition-colors cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
                 Logout
@@ -131,7 +127,7 @@ export default async function DashboardPage() {
             <div className="flex flex-col gap-2 text-center sm:text-left">
               <span className="font-press-start text-[10px] text-[#E8A33D] tracking-widest">SIAP BERTUALANG?</span>
               <h2 className="text-2xl font-bold font-sans">Mulai Permainan Baru</h2>
-              <p className="text-sm text-[#F2E9D8]/70 max-w-sm">
+              <p className="text-sm text-[#F2E9D8]/80 max-w-sm">
                 Pilih tema board-mu, buat lobby room atau gabung bersama kawan secara instan.
               </p>
             </div>
@@ -159,57 +155,57 @@ export default async function DashboardPage() {
           
           {/* Stats & Hero Performance Cards */}
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-[#232129] border border-[#4B4A57]/30 rounded-lg p-4 flex flex-col items-center justify-center text-center shadow-md">
-              <span className="text-[10px] font-press-start text-[#F2E9D8]/50 mb-2">TOTAL</span>
+            <div className="bg-[#232129] border border-[#4B4A57]/40 rounded-lg p-4 flex flex-col items-center justify-center text-center shadow-md">
+              <span className="text-[10px] font-press-start text-[#F2E9D8]/70 mb-2">TOTAL</span>
               <span className="text-2xl font-press-start font-bold text-[#F2E9D8]">{totalGames}</span>
-              <span className="text-[9px] font-mono text-[#F2E9D8]/30 mt-1 uppercase">Matches</span>
+              <span className="text-[9px] font-mono text-[#F2E9D8]/60 mt-1 uppercase">Matches</span>
             </div>
-            <div className="bg-[#232129] border border-[#4B4A57]/30 rounded-lg p-4 flex flex-col items-center justify-center text-center shadow-md">
+            <div className="bg-[#232129] border border-[#4B4A57]/40 rounded-lg p-4 flex flex-col items-center justify-center text-center shadow-md">
               <span className="text-[10px] font-press-start text-[#5FA35A] mb-2">WIN</span>
               <span className="text-2xl font-press-start font-bold text-[#5FA35A]">{totalWins}</span>
-              <span className="text-[9px] font-mono text-[#F2E9D8]/30 mt-1 uppercase">Victory</span>
+              <span className="text-[9px] font-mono text-[#F2E9D8]/60 mt-1 uppercase">Victory</span>
             </div>
-            <div className="bg-[#232129] border border-[#4B4A57]/30 rounded-lg p-4 flex flex-col items-center justify-center text-center shadow-md">
+            <div className="bg-[#232129] border border-[#4B4A57]/40 rounded-lg p-4 flex flex-col items-center justify-center text-center shadow-md">
               <span className="text-[10px] font-press-start text-[#E8A33D] mb-2">RATE</span>
               <span className="text-2xl font-press-start font-bold text-[#E8A33D]">{winRate}%</span>
-              <span className="text-[9px] font-mono text-[#F2E9D8]/30 mt-1 uppercase">Win Rate</span>
+              <span className="text-[9px] font-mono text-[#F2E9D8]/60 mt-1 uppercase">Win Rate</span>
             </div>
           </div>
 
           {/* Hero Favorite & Achievements Section */}
-          <div className="bg-[#232129] border border-[#4B4A57]/30 rounded-lg p-5 flex flex-col gap-4 shadow-md">
-            <div className="flex items-center justify-between border-b border-[#4B4A57]/20 pb-3">
+          <div className="bg-[#232129] border border-[#4B4A57]/40 rounded-lg p-5 flex flex-col gap-4 shadow-md">
+            <div className="flex items-center justify-between border-b border-[#4B4A57]/30 pb-3">
               <span className="font-press-start text-xs text-[#E8A33D] flex items-center gap-2">
                 <Award className="w-4 h-4 text-[#E8A33D]" /> HERO FAVORIT &amp; BADGES
               </span>
             </div>
 
-            <div className="flex items-center justify-between bg-[#1B1A1F] p-3 rounded border border-[#4B4A57]/20">
+            <div className="flex items-center justify-between bg-[#1B1A1F] p-3.5 rounded border border-[#4B4A57]/30">
               <div className="flex items-center gap-3">
                 <PixelSprite characterId={favoriteHeroId} direction="down" isWalking={true} size={36} />
                 <div className="flex flex-col">
                   <span className="text-xs font-bold font-sans text-[#F2E9D8] capitalize">{favoriteHeroId}</span>
-                  <span className="text-[9px] font-mono text-[#F2E9D8]/40">Most Played Hero</span>
+                  <span className="text-[10px] font-mono text-[#F2E9D8]/70">Most Played Hero</span>
                 </div>
               </div>
-              <span className="text-[10px] font-press-start text-[#5FA35A]">
+              <span className="text-[10px] font-press-start text-[#5FA35A] bg-[#5FA35A]/10 px-2 py-1 rounded border border-[#5FA35A]/30">
                 {heroUsageMap[favoriteHeroId] || 0}x Played
               </span>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <span className="text-[10px] font-press-start text-[#F2E9D8]/50">ACHIEVEMENTS</span>
+            <div className="flex flex-col gap-2 pt-2">
+              <span className="text-[10px] font-press-start text-[#E8A33D]">ACHIEVEMENTS</span>
               <div className="grid grid-cols-3 gap-2">
                 {badges.map((b) => (
                   <div
                     key={b.id}
-                    className={`p-2 rounded border flex flex-col items-center text-center gap-1 ${
+                    className={`p-2.5 rounded border flex flex-col items-center text-center gap-1.5 transition-all ${
                       b.unlocked
-                        ? "bg-[#5FA35A]/10 border-[#5FA35A]/40 text-[#5FA35A]"
-                        : "bg-[#1B1A1F]/50 border-[#4B4A57]/20 text-[#F2E9D8]/30"
+                        ? "bg-[#5FA35A]/15 border-[#5FA35A]/50 text-[#5FA35A] shadow-[0_0_8px_rgba(95,163,90,0.2)]"
+                        : "bg-[#1B1A1F] border-[#4B4A57]/40 text-[#F2E9D8]/60"
                     }`}
                   >
-                    <Zap className="w-4 h-4" />
+                    <Zap className={`w-4 h-4 ${b.unlocked ? "text-[#5FA35A]" : "text-[#F2E9D8]/40"}`} />
                     <span className="text-[9px] font-bold font-sans">{b.title}</span>
                   </div>
                 ))}
@@ -218,38 +214,38 @@ export default async function DashboardPage() {
           </div>
 
           {/* Match History */}
-          <div className="bg-[#232129] border border-[#4B4A57]/30 rounded-lg p-6 flex flex-col gap-4 shadow-md">
-            <div className="flex items-center gap-2 border-b border-[#4B4A57]/20 pb-3">
+          <div className="bg-[#232129] border border-[#4B4A57]/40 rounded-lg p-6 flex flex-col gap-4 shadow-md">
+            <div className="flex items-center gap-2 border-b border-[#4B4A57]/30 pb-3">
               <History className="w-5 h-5 text-[#E8A33D]" />
               <span className="font-press-start text-xs text-[#F2E9D8]">Match History</span>
             </div>
 
-            <div className="flex flex-col gap-3 min-h-[200px]">
+            <div className="flex flex-col gap-3 min-h-[160px]">
               {lastMatches.length > 0 ? (
                 lastMatches.map((match: any) => (
                   <div
                     key={match.id}
-                    className="flex items-center justify-between p-3 bg-[#1B1A1F] border border-[#4B4A57]/10 rounded font-mono text-xs"
+                    className="flex items-center justify-between p-3 bg-[#1B1A1F] border border-[#4B4A57]/30 rounded font-mono text-xs hover:border-[#E8A33D]/40 transition-colors"
                   >
                     <div className="flex flex-col gap-1">
                       <span className="text-[11px] font-bold text-[#F2E9D8]">
                         Room: {match.room.code}
                       </span>
-                      <span className="text-[9px] text-[#F2E9D8]/40">
-                        {match.joinedAt.toLocaleDateString()}
+                      <span className="text-[9px] text-[#F2E9D8]/60">
+                        {match.joinedAt ? new Date(match.joinedAt).toLocaleDateString("id-ID") : "-"}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <span className="text-[10px] px-2 py-0.5 bg-[#4B4A57]/20 rounded text-[#F2E9D8]/70">
-                        Char: {match.characterId.toUpperCase()}
+                      <span className="text-[10px] px-2 py-0.5 bg-[#4B4A57]/30 rounded text-[#F2E9D8] font-bold">
+                        {match.characterId.toUpperCase()}
                       </span>
                       {match.isWinner ? (
-                        <span className="text-[10px] font-bold text-[#5FA35A] bg-[#5FA35A]/10 px-2 py-0.5 rounded border border-[#5FA35A]/20">
+                        <span className="text-[10px] font-bold text-[#5FA35A] bg-[#5FA35A]/15 px-2 py-0.5 rounded border border-[#5FA35A]/30">
                           WIN
                         </span>
                       ) : (
-                        <span className="text-[10px] font-bold text-[#C24A4A] bg-[#C24A4A]/10 px-2 py-0.5 rounded border border-[#C24A4A]/20">
+                        <span className="text-[10px] font-bold text-[#C24A4A] bg-[#C24A4A]/15 px-2 py-0.5 rounded border border-[#C24A4A]/30">
                           LOSE
                         </span>
                       )}
@@ -257,9 +253,9 @@ export default async function DashboardPage() {
                   </div>
                 ))
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-[#F2E9D8]/40">
-                  <span className="font-press-start text-[10px] mb-2">Empty Log</span>
-                  <p className="text-xs max-w-[200px] leading-relaxed">
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-[#F2E9D8]/60 bg-[#1B1A1F]/50 rounded border border-[#4B4A57]/20">
+                  <span className="font-press-start text-[10px] text-[#E8A33D] mb-2">Belum Ada Catatan</span>
+                  <p className="text-xs max-w-[220px] leading-relaxed text-[#F2E9D8]/70">
                     Belum ada pertandingan. Tekan "Main Sekarang" untuk memulai!
                   </p>
                 </div>

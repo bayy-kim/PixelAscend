@@ -206,8 +206,8 @@ export default function ProfileEditor({
 
         <div className="flex-1 flex flex-col gap-1 text-center sm:text-left">
           <span className="font-press-start text-xs text-[#E8A33D]">{nickname || initialName}</span>
-          <span className="text-xs text-[#F2E9D8]/50 font-mono">ID: {initialName}</span>
-          <span className="text-[11px] text-[#F2E9D8]/40 leading-relaxed font-sans max-w-sm mt-1">
+          <span className="text-xs text-[#F2E9D8]/70 font-mono">ID: {initialName}</span>
+          <span className="text-[11px] text-[#F2E9D8]/70 leading-relaxed font-sans max-w-sm mt-1">
             Tap foto profil untuk mengganti (JPG/PNG/WEBP, Max 2MB, dikompresi otomatis).
           </span>
         </div>
@@ -216,13 +216,13 @@ export default function ProfileEditor({
       {/* Nickname Form */}
       <form onSubmit={handleNicknameSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <label className="text-xs font-press-start text-[#F2E9D8]/70">Nickname Baru</label>
+          <label className="text-xs font-press-start text-[#F2E9D8]/90">Nickname Baru</label>
           <div className="flex gap-3">
             <input
               type="text"
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
-              className="flex-1 bg-[#1B1A1F] border border-[#4B4A57]/30 rounded px-4 py-3 text-sm text-[#F2E9D8] focus:outline-none focus:border-[#E8A33D]"
+              className="flex-1 bg-[#1B1A1F] border border-[#4B4A57]/50 rounded px-4 py-3 text-sm text-[#F2E9D8] focus:outline-none focus:border-[#E8A33D]"
               maxLength={20}
               placeholder="3-20 karakter alfanumerik"
               disabled={isPendingNickname}
@@ -245,7 +245,7 @@ export default function ProfileEditor({
           <label className="text-xs font-press-start text-[#E8A33D] flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5" /> HERO UTAMA (AUTO PRE-SELECT)
           </label>
-          <span className="text-[10px] font-mono text-[#F2E9D8]/40">Dipilih otomatis di Lobby</span>
+          <span className="text-[10px] font-mono text-[#F2E9D8]/70">Dipilih otomatis di Lobby</span>
         </div>
 
         <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
