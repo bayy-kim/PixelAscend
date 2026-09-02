@@ -18,6 +18,7 @@ import { BoardRenderer2D, ActiveEmote } from "./BoardRenderer2D";
 import { BOARD_LAYOUT } from "@/lib/game/board";
 import { sounds, triggerHaptic } from "@/lib/audio-haptics";
 import { getCharacterMedia } from "@/lib/character-meta";
+import { DiceFace } from "@/app/_components/DiceFace";
 import { useRouter } from "next/navigation";
 import { Shield, Sparkles, Skull, Dices, ChevronRight, Zap, ArrowUp, Volume2, VolumeX, RotateCcw, Smile, Loader2, Trophy, Bot } from "lucide-react";
 
@@ -537,27 +538,19 @@ export default function GameplayClient({
           </div>
 
           {/* 3D-ish animated dice box */}
-          <div className="w-20 h-20 bg-[#1B1A1F] border-2 border-[#4B4A57] rounded flex items-center justify-center relative overflow-hidden shadow-lg">
-            {isRolling ? (
-              <div className="animate-spin duration-300">
-                <Dices className="w-10 h-10 text-[#E8A33D] opacity-80" />
-              </div>
-            ) : rolledValue ? (
-              <div className="flex flex-col items-center">
-                <span className="font-press-start text-3xl font-bold text-[#E8A33D] animate-pulse">
-                  {rolledValue}
-                </span>
-                {rolledValue === 6 && (
-                  <span className="text-[9px] font-mono text-[#5FA35A] font-bold animate-bounce">
-                    BONUS 6!
-                  </span>
-                )}
-                {modifierValue > 0 && (
-                  <span className="text-[9px] font-mono text-[#5FA35A] font-bold">+{modifierValue} modifier</span>
-                )}
-              </div>
-            ) : (
-              <Dices className="w-8 h-8 text-[#F2E9D8]/20" />
+          <div className="flex flex-col items-center gap-1.5 my-1">
+            <DiceFace
+              value={rolledValue || 1}
+              size={56}
+              isRolling={isRolling || isPendingRoll}
+            />
+            {rolledValue === 6 && (
+              <span className="text-[9px] font-press-start text-[#5FA35A] font-bold animate-bounce mt-1">
+                BONUS 6!
+              </span>
+            )}
+            {modifierValue > 0 && (
+              <span className="text-[9px] font-mono text-[#5FA35A] font-bold">+{modifierValue} modifier</span>
             )}
           </div>
 
