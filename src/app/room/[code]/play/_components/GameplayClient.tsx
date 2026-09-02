@@ -44,6 +44,7 @@ interface GameplayClientProps {
   roomCode: string;
   currentUserId: string;
   hostUserId?: string;
+  themeId?: string;
   initialPlayers: PlayerData[];
   currentTurnIndex: number;
   status: string;
@@ -53,6 +54,7 @@ export default function GameplayClient({
   roomCode,
   currentUserId,
   hostUserId,
+  themeId = "wanderers-path",
   initialPlayers,
   currentTurnIndex: initialTurnIndex,
   status: initialStatus,
@@ -435,6 +437,7 @@ export default function GameplayClient({
             isCurrentTurn: p.userId === activeTurnPlayer?.userId,
           }))}
           currentTurnUserId={activeTurnPlayer?.userId}
+          themeId={themeId}
           activeEmotes={activeEmotes}
           onSkipCutscene={() => setActiveCutscene(null)}
           activeCutscene={

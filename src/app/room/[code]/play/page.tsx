@@ -87,6 +87,7 @@ export default async function GameplayPage({ params }: PageProps) {
           roomCode={roomCode}
           currentUserId={session.user.id}
           hostUserId={room.hostUserId}
+          themeId={room.themeId}
           initialPlayers={mappedPlayers}
           currentTurnIndex={room.currentTurnIndex}
           status={room.status}

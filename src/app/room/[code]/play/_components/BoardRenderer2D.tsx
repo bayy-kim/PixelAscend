@@ -29,6 +29,7 @@ interface BoardRenderer2DProps {
   boardLayout: BoardTileEffect[];
   players: PlayerRenderState[];
   currentTurnUserId?: string;
+  themeId?: string;
   onTileClick?: (tileIndex: number) => void;
   activeEmotes?: ActiveEmote[];
   activeCutscene?: {
@@ -42,6 +43,7 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
   boardLayout,
   players,
   currentTurnUserId,
+  themeId = "wanderers-path",
   onTileClick,
   activeEmotes = [],
   activeCutscene,
@@ -130,7 +132,7 @@ export const BoardRenderer2D: React.FC<BoardRenderer2DProps> = ({
       {/* Board Theme Background */}
       <div 
         className="absolute inset-2 bg-cover bg-center opacity-60 pixelated pointer-events-none rounded"
-        style={{ backgroundImage: "url('/themes/wanderers-path/board.png')" }}
+        style={{ backgroundImage: `url('/themes/${themeId || "wanderers-path"}/board.png')` }}
       />
 
       {/* Full-Board SVG Overlay for Organic Curved Snakes & Luminous Ladders */}
